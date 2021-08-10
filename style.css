@@ -1,0 +1,12 @@
+/*
+Theme Name: Fullmoon Gamerz
+Author: Captain Wizard
+Author URI: https://fullmoongamerz.com
+Version: 1.0.0
+*/
+*,
+*::before,
+*::after {
+  -webkit-box-sizing: border-box;
+          box-sizing: border-box;
+}
