@@ -4,9 +4,102 @@ Author: Captain Wizard
 Author URI: https://fullmoongamerz.com
 Version: 1.0.0
 */
+
+/*------*/
+@font-face {
+  font-family: "Roboto";
+  font-weight: 300;
+  font-style: normal;
+  src: url("style/font/Roboto-Light.ttf");
+}
+@font-face {
+  font-family: "Roboto";
+  font-weight: 500;
+  font-style: normal;
+  src: url("style/font/Roboto-Medium.ttf");
+}
+@font-face {
+  font-family: "JollyLodger";
+  font-weight: normal;
+  font-style: normal;
+  src: url("style/font/JollyLodger-Regular.ttf");
+}
+
+/*------*/
 *,
 *::before,
 *::after {
   -webkit-box-sizing: border-box;
           box-sizing: border-box;
+  font-family: "Roboto", sans-serif;
+  font-weight: 300;
+  font-size: 1.1em;
+  line-height: 1.3em;
+  margin: 0;
+  padding: 0;
+}
+
+/*------*/
+body {
+  background-repeat: repeat;
+  background-image: url("images/paper-back.jpg");
+}
+
+/*------*/
+h1, 
+h2 {
+  font-family: "JollyLodger";
+  font-weight: normal;
+}
+h1 {
+  font-size: 2.5em;
+  line-height: 1em;
+}
+h2 {
+  font-size: 2em;
+  line-height: 1em;
+}
+a,
+a:visited {
+  text-decoration: none;
+  font-weight: 500;
+  color: #912a2a;
+}
+
+.container {
+  width: 100%;
+  padding: 1em;
+  max-width: 950px;
+  margin: 0 auto;
+}
+
+/*------*/
+/* Holder
+/*------*/
+.holder-img {
+  display: block;
+  width: 100%;
+}
+.under-constuction {
+  display:-webkit-box;
+  display:-ms-flexbox;
+  display:flex;
+  -webkit-box-orient: horizontal;
+  -webkit-box-direction: normal;
+      -ms-flex-direction: row;
+          flex-direction: row;
+  -ms-flex-wrap: nowrap;
+      flex-wrap: nowrap;
+  -webkit-box-pack: center;
+      -ms-flex-pack: center;
+          justify-content: center;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  margin: 2em 0 ;
+}
+.under-constuction img {
+  width: 100px;
+  height: 100px;
+  margin-right: 0.5em;
 }

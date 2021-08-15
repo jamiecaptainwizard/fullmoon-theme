@@ -1,3 +1,8 @@
-<?php
-echo('header');
-?>
+<html>
+  <head>
+  <?php
+  wp_head();
+  ?>
+  </head>
+
+  <body>
