@@ -9,7 +9,8 @@
   }
 
   foreach(array(
-    'wordpress' => array('version' => 25, 'classes' => array('key_wpplugin','key_wpkdk','key_wpdashboard','key_wptheme','key_wpposttype','key_wpsitemap')),
+    'file' => array('version' => 6, 'classes' => array('key_file')),
+    'wordpress' => array('version' => 36, 'classes' => array('key_wpplugin','key_wpkdk','key_wpdashboard','key_wptheme','key_wpposttype','key_wpsitemap')),
   ) as $key => $info) {
     if (!isset($GLOBALS['key_code_versions'][$key]) || ($GLOBALS['key_code_versions'][$key] < $info['version'])) {
       $GLOBALS['key_code_versions'][$key] = $info['version'];

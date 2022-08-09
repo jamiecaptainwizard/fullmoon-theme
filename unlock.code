@@ -16,7 +16,7 @@ wordpress
 !session
 !recaptcha
 !json
-!file
+file
 !db
 !crypto
 !monday

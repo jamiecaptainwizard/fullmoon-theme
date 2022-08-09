@@ -1,16 +1,15 @@
 <?php
-
 /*---------*/
-define('FMTHEME_DIR', __DIR__ . '/');
-define('FMTHEME_INC_DIR', FMTHEME_DIR . 'inc/');
-
-/*---------*/
-require_once(FMTHEME_INC_DIR . 'key_load.php');
+require_once(__DIR__ . '/inc/key_load.php');
 
 /*---------*/
 key_wptheme::loadTheme(array(
   'files' => array(
-    'logo' => 'YouTubeIcon.png'
+    'logo' => 'YouTubeIcon.png',
+    'includeFunctions' => array(
+      'widgets',
+      'utils'
+    )
   ),
   //Dorchester
   'adminStyle' => array(
@@ -31,7 +30,6 @@ key_wptheme::loadTheme(array(
     'hide' => array(
       'bar-wordpress',
       'bar-new',
-      //Change these to show comments/appearence if needed
       'themes',
       'comments'
     )
@@ -49,12 +47,23 @@ key_wptheme::loadTheme(array(
 ));
 
 /*---------*/
-add_action('wp_head', 'fullmoon_head');
-function fullmoon_head() {
-  echo('<meta charset="utf-8">' . PHP_EOL);
-  echo('<meta http-equiv="x-ua-compatible" content="ie=edge">' . PHP_EOL);
-  echo('<meta name="viewport" content="width=device-width, initial-scale=1">' . PHP_EOL);
-  //TODO: Favicon
+if (is_admin()) {
+  fullmoon_widgets::init();
+
+  add_action('init', 'fm_adminInit');
+}
+
+/*---------*/
+function fm_adminInit() {
+  if (function_exists('acf_add_options_page')) {
+    acf_add_options_page(array(
+      'page_title' 	=> 'Video Widgets',
+      'menu_title' 	=> 'Video Widgets',
+      'menu_slug' 	=> 'fullmoon-video-widgets',
+      'icon_url'   => 'dashicons-video-alt3',
+      'position'    => 15
+    ));		
+  }
 }
 
 ?>

@@ -1,0 +1,11 @@
+.subscribe-image {
+  display: block;
+  width:400px;
+  height:auto;
+  margin: 10px auto 10px auto;
+}
+.subscribe-holder {
+  position: relative;
+  width: 500px;
+  overflow: hidden;
+}

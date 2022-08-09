@@ -2,16 +2,16 @@
 /*----------------------------*/
 /*--KEY_WPPLUGIN--------------*/
 /*----------------------------*/
-if (!class_exists('key_wpplugin')) { 
+if (!class_exists('key_wpplugin')) {
   define('KEY_WPPLUGIN_VERSIONKEY', 'key_version_');
 
   //define('KEY_COMMON_WPPLUGIN_URL', 'http://dev.test.com/wp-content/themes/updateservice/pluginhook.php?hash=%s&slug=%s');
   define('KEY_COMMON_WPPLUGIN_URL', 'https://repo.keydigital.dev/wp-content/themes/updateservice/pluginhook.php?hash=%s&slug=%s');
   //define('KEY_COMMON_WPKDK_URL',    'http://dev.test.com/wp-content/themes/updateservice/kdkhook.php?hash=%s&slug=%s');
   define('KEY_COMMON_WPKDK_URL',    'https://repo.keydigital.dev/wp-content/themes/updateservice/kdkhook.php?hash=%s&slug=%s');
-  
+
   class key_wpplugin {
-    public static $VERSION = 25;
+    public static $VERSION = 36;
 
     public  $apiKey     = '';
     public  $file       = '';
@@ -44,13 +44,13 @@ if (!class_exists('key_wpplugin')) {
       add_filter('plugins_api',                    array($this, 'getInfo'),           20, 3);
       add_action("after_plugin_row_{$this->file}", array($this, 'afterPluginRow'),    10, 3);
       add_filter('plugin_action_links',            array($this, 'pluginActionLinks'), 10, 3);
-      add_filter('site_transient_update_plugins',  array($this, 'pushUpdate')); 
+      add_filter('site_transient_update_plugins',  array($this, 'pushUpdate'));
       add_filter('transient_update_plugins',       array($this, 'pushUpdate'));
       add_action('init',                           array($this, 'checkVersionAndInit'));
-      
+
       key_wpdashboard::enqueueHeader();
     }
-    
+
     /*----------------------*/
     public function regenerateKDK() {
       $newFromRemote = $this->generateKDK(array('remote'));
@@ -122,7 +122,7 @@ if (!class_exists('key_wpplugin')) {
     /*----------------------*/
     private function kdkFromDB() {
       $rawKDK = get_option($this->kdkKey(), '');
-    
+
       $this->kdk = new key_wpkdk($rawKDK, $this->slug);
       return $this->kdk->isValid();
     }
@@ -146,12 +146,12 @@ if (!class_exists('key_wpplugin')) {
     /*----------------------*/
     private function kdkFromRemote() {
       $rawKDK = '';
-      
+
       $url = sprintf(KEY_COMMON_WPKDK_URL, $this->apiKey, $this->slug);
       $remote = wp_remote_get($url, array('timeout' => 10));
-      
+
       if (!is_wp_error($remote)) {
-        $code = isset($remote['response']['code']) ? intval($remote['response']['code']) : -1;  
+        $code = isset($remote['response']['code']) ? intval($remote['response']['code']) : -1;
         if (($code == 200) && isset($remote['body']) && ($remote['body'] != '')) {
           $rawKDK = $remote['body'];
         } else if ($code == 401) {
@@ -166,24 +166,24 @@ if (!class_exists('key_wpplugin')) {
     /*----------------------*/
     private function getRemoteData(){
       $remote = get_transient('key_upgrade_' . $this->slug);
-	    if(!$remote) {	
-	    	$url = sprintf(KEY_COMMON_WPPLUGIN_URL, $this->apiKey , $this->slug);
-	    	$remote = wp_remote_get($url, 
-	    	  array(
-	    		  'timeout' => 10,
-	    		  'headers' => array(
-	    			  'Accept' => 'application/json'
-	    			) 
-	    		)
-	    	);
-        
+      if(!$remote) {
+        $url = sprintf(KEY_COMMON_WPPLUGIN_URL, $this->apiKey , $this->slug);
+        $remote = wp_remote_get($url,
+          array(
+            'timeout' => 10,
+            'headers' => array(
+              'Accept' => 'application/json'
+            )
+          )
+        );
+
         $error = '';
         if (!is_wp_error($remote)) {
           $code = isset($remote['response']['code']) ? intval($remote['response']['code']) : -1;
           if ($code == 200) {
             if (!isset($remote['body']) || empty($remote['body'])) {
               $error = 'Response is empty';
-            } 
+            }
           } else {
             switch($code) {
               case 400 : $error = '400 : Bad request - Missing information when trying to update'; break;
@@ -202,7 +202,7 @@ if (!class_exists('key_wpplugin')) {
           set_transient('key_upgrade_error_' . $this->slug, $error, 3600);
           return null;
         } else {
-          set_transient('key_upgrade_' . $this->slug, $remote, 21600); 
+          set_transient('key_upgrade_' . $this->slug, $remote, 21600);
           return $remote;
         }
       }
@@ -210,20 +210,20 @@ if (!class_exists('key_wpplugin')) {
     }
 
     /*----------------------*/
-    public function pushUpdate($transient) {    
+    public function pushUpdate($transient) {
       if (empty($transient->checked)) {
         return $transient;
-      } 	
-    
+      }
+
       $hasError = get_transient('key_upgrade_error_' . $this->slug);
-      if ($hasError != null) {		    
+      if ($hasError != null) {
         return $transient;
-      }      
-    
-      $remote = $this->getRemoteData();     
+      }
+
+      $remote = $this->getRemoteData();
       if($remote) {
          $remote = json_decode($remote['body']);
-     
+
         if($remote && version_compare($this->version, $remote->version, '<') && version_compare($remote->requires, get_bloginfo('version'), '<')) {
           $res = new stdClass();
           $res->slug        = $this->slug;
@@ -234,7 +234,7 @@ if (!class_exists('key_wpplugin')) {
           $res->url         = $remote->author_homepage;
           $transient->response[$res->plugin] = $res;
           //$transient->checked[$res->plugin] = $remote->version;
-        } 
+        }
       }
       return $transient;
     }
@@ -251,11 +251,11 @@ if (!class_exists('key_wpplugin')) {
 
       $hasError = get_transient('key_upgrade_error_' . $this->slug);
       if ($hasError != null) {
-		    return false;
+        return false;
       }
-      
+
       $remote = $this->getRemoteData();
-      if($remote) { 
+      if($remote) {
         $remote = json_decode( $remote['body'] );
         $res = new stdClass();
         $res->name           = $remote->name;
@@ -269,14 +269,14 @@ if (!class_exists('key_wpplugin')) {
         $res->trunk          = $remote->download_url;
         $res->last_updated   = $remote->last_updated;
         $res->sections       = array(
-          'description' => $remote->sections->description, 
+          'description' => $remote->sections->description,
           'changelog' => $remote->sections->changelog
         );
-         
-        return $res; 
+
+        return $res;
       }
-     
-      return false; 
+
+      return false;
     }
 
     /*----------------------*/
@@ -285,17 +285,13 @@ if (!class_exists('key_wpplugin')) {
     }
 
     /*----------------------*/
-    public function checkVersionAndInit() {
-      if (is_admin()) {  
-        $oldVersion = get_option(KEY_WPPLUGIN_VERSIONKEY . $this->slug, '0.0.0');
-        if (version_compare($oldVersion, $this->version, '!=')) { 
-          do_action('key_wpplugin_init_' . $this->slug, $oldVersion);
-          update_option(KEY_WPPLUGIN_VERSIONKEY . $this->slug, $this->version);
-          $this->clearUpdateData();
-        }  else {
-          do_action('key_wpplugin_init_' . $this->slug, '');
-        }
-      } else {
+    public function checkVersionAndInit() {      
+      $oldVersion = get_option(KEY_WPPLUGIN_VERSIONKEY . $this->slug, '0.0.0');
+      if (version_compare($oldVersion, $this->version, '!=')) {
+        do_action('key_wpplugin_init_' . $this->slug, $oldVersion);
+        update_option(KEY_WPPLUGIN_VERSIONKEY . $this->slug, $this->version);
+        $this->clearUpdateData();
+      }  else {
         do_action('key_wpplugin_init_' . $this->slug, '');
       }
     }
@@ -317,14 +313,14 @@ if (!class_exists('key_wpplugin')) {
     }
 
     /*-------------------------*/
-    public function pluginActionLinks($links, $plugin_file, $plugin_data) {	
-    	if ($plugin_data['TextDomain'] === $this->textDomain) {
-    		$links[] = sprintf('<a href="%s" class="thickbox" title="Details">View details</a>',
-    		  self_admin_url('plugin-install.php?tab=plugin-information&amp;plugin=' . $this->slug . '&amp;TB_iframe=true&amp;width=600&amp;height=550')
+    public function pluginActionLinks($links, $plugin_file, $plugin_data) {
+      if ($plugin_data['TextDomain'] === $this->textDomain) {
+        $links[] = sprintf('<a href="%s" class="thickbox" title="Details">View details</a>',
+          self_admin_url('plugin-install.php?tab=plugin-information&amp;plugin=' . $this->slug . '&amp;TB_iframe=true&amp;width=600&amp;height=550')
         );
-    	}
-    	
-    	return $links;
+      }
+
+      return $links;
     }
 
     /*-------------------------*/
@@ -367,7 +363,7 @@ if (!class_exists('key_wpplugin')) {
       echo('    <h1>' . $title . ' </h1>' . PHP_EOL);
       echo('    <p><strong>Version:</strong> ' . $this->version . '</p>' . PHP_EOL);
       echo('  </div>' . PHP_EOL);
-      echo('</div>' . PHP_EOL);  
+      echo('</div>' . PHP_EOL);
     }
 
     /*-------------------------*/
@@ -377,7 +373,7 @@ if (!class_exists('key_wpplugin')) {
       key_wpdashboard::echoCopyright();
     }
     public static function echoTextArea($key, $title, $description, $label) {
-      key_wpdashboard::echoTextArea($key, $title, $description, $label);      
+      key_wpdashboard::echoTextArea($key, $title, $description, $label);
     }
     public static function echoInput($key, $title, $description, $label, $type = 'text') {
       key_wpdashboard::echoInput($key, $title, $description, $label, $type);
@@ -386,13 +382,13 @@ if (!class_exists('key_wpplugin')) {
       key_wpdashboard::echoCheckbox($key, $title, $description, $label);
     }
     public static function echoSelectBox($key, $options) {
-      key_wpdashboard::echoSelectBox($key, $options);      
+      key_wpdashboard::echoSelectBox($key, $options);
     }
     public static function echoImageSelect($key, $title, $description) {
       key_wpdashboard::echoImageSelect($key, $title, $description);
     }
     public static function echoSettingsFields() {
-      key_wpdashboard::echoSettingsFields();      
+      key_wpdashboard::echoSettingsFields();
     }
     public static function echoSubmitButton($text = 'Save Changes') {
       key_wpdashboard::echoSubmitButton($text);
@@ -411,7 +407,7 @@ if (!class_exists('key_wpplugin')) {
 /*----------------------------*/
 /*--KEY_WPKDK-----------------*/
 /*----------------------------*/
-if (!class_exists('key_wpkdk')) {  
+if (!class_exists('key_wpkdk')) {
 
   class key_wpkdk {
     public $raw = '';
@@ -450,26 +446,26 @@ if (!class_exists('key_wpkdk')) {
     public function printInfo() {
       $res = '';
       $res .= '<h3>KDK Information</h3>' . PHP_EOL;
-      if ($this->isValid()) {      
+      if ($this->isValid()) {
         $res .= '<p>';
         $res .= '<b>Client</b>: ' . $this->client . '<br/>';
-  
+
         foreach($this->permissions as $permission) {
           $toPrint = 'Unknown (' . $permission . ')';
           $toPrint = apply_filters('key_wpkdk_permission_' . $this->slug, $toPrint, $permission);
           $res .= '<b>Permission</b>: ' . $toPrint . '<br/>';
         }
-  
+
         foreach($this->extras as $key => $extra) {
           $toPrint = 'Unknown (' . $key . ')';
           $toPrint = apply_filters('key_wpkdk_extra_' . $this->slug, $toPrint, $key, $extra);
           $res .= '<b>Extra</b>: ' . $toPrint . '<br/>';
         }
-  
+
         $res .= '</p>';
       } else {
         $res .= '<p style="color:red"><b>KDK Is missing or invalid... Is your API key correct?</p>';
-      } 
+      }
       echo($res);
     }
 
@@ -485,11 +481,11 @@ if (!class_exists('key_wpkdk')) {
 
     /*-------------------------*/
     public static function c($a, $xc, $zc) {
-      $b = base64_encode($a);    
+      $b = base64_encode($a);
       $z = substr(hash('sha256', $zc), 0, 16);
       $x = hash('sha256', $xc);
       $o = openssl_encrypt($b, "AES-256-CBC", $x, 0, $z);
-      return base64_encode($o);    
+      return base64_encode($o);
     }
 
     /*------------------*/
@@ -499,9 +495,9 @@ if (!class_exists('key_wpkdk')) {
       $x = hash('sha256', $xc);
       $o = openssl_decrypt($b, "AES-256-CBC", $x, 0, $z);
       return base64_decode($o);
-    }   
+    }
 
-    /*------------------*/    
+    /*------------------*/
   }
 }
 
@@ -527,7 +523,7 @@ if (!class_exists('key_wpposttype')) {
 
     /*-----------------*/
     public function __construct($id) {
-      $this->id = $id;     
+      $this->id = $id;
     }
 
     /*-------------------------*/
@@ -548,26 +544,21 @@ if (!class_exists('key_wpposttype')) {
     /*-------------------------*/
     public function savePost($postId, $post, $didUpdate) {
       $this->triggerChange($postId, KEY_WPPOSTYPE_CHANGE_POSTSAVE);
-    }
+    }    
 
     /*-----------------*/
-    public function editTax($termId, $tt_id, $taxonomy) {
+    public function savedTax($termId, $tt_id, $taxonomy, $update) {
       if ($taxonomy == $this->id) {
-        $this->triggerTaxChange($termId, KEY_WPPOSTYPE_CHANGE_TAXEDIT);
+       $this->triggerTaxChange($termId, ($update ? KEY_WPPOSTYPE_CHANGE_TAXEDIT : KEY_WPPOSTYPE_CHANGE_TAXCREATE));
       }
-    }  
-
-    /*-----------------*/
-    public function createTax($termId, $tt_id) {
-      $this->triggerTaxChange($termId, KEY_WPPOSTYPE_CHANGE_TAXCREATE);
-    }
+    }   
 
     /*-----------------*/
     public function deleteTax($termId, $tt_id, $taxonomy, $deleted_term) {
       if ($taxonomy == $this->id) {
         $this->triggerTaxChange($termId, KEY_WPPOSTYPE_CHANGE_TAXDELETE);
       }
-    }  
+    }
 
     /*-------------------------*/
     private function triggerTaxChange($termId, $action) {
@@ -593,7 +584,7 @@ if (!class_exists('key_wpposttype')) {
     /*-------------------------*/
     public static function attachHooksToPostTypes($postTypes = array(), $hooksPriority = 20) {
       foreach($postTypes as $postTypeKey) {
-        $postType = new key_wpposttype($postTypeKey);  
+        $postType = new key_wpposttype($postTypeKey);
         add_action('delete_post',            array($postType, 'deletedPost'),    $hooksPriority);
         add_action('trashed_post',           array($postType, 'trashedPost'),    $hooksPriority);
         add_action('untrashed_post',         array($postType, 'untrashedPost'),  $hooksPriority);
@@ -606,26 +597,26 @@ if (!class_exists('key_wpposttype')) {
     public static function addPostType($id, $singleName, $multipleName, $slug, $argsOverrides = array(), $hooksPriority = 20) {
       $labels = array(
         'name'               => $multipleName,
-        'singular_name'      => $singleName, 
-        'menu_name'          => $multipleName, 
-        'name_admin_bar'     => $multipleName, 
-        'add_new'            => 'Add ' . $singleName, 
+        'singular_name'      => $singleName,
+        'menu_name'          => $multipleName,
+        'name_admin_bar'     => $multipleName,
+        'add_new'            => 'Add ' . $singleName,
         'add_new_item'       => 'Add New ' . $singleName,
         'new_item'           => 'New ' . $singleName,
         'edit_item'          => 'Edit ' . $singleName,
         'view_item'          => 'View ' . $singleName,
-        'all_items'          => 'All ' . $multipleName, 
-        'search_items'       => 'Search ' . $multipleName, 
-        'parent_item_colon'  => 'Parent ' . $multipleName . ' :', 
+        'all_items'          => 'All ' . $multipleName,
+        'search_items'       => 'Search ' . $multipleName,
+        'parent_item_colon'  => 'Parent ' . $multipleName . ' :',
         'not_found'          => 'No ' . strtolower($multipleName) . ' found.',
         'not_found_in_trash' => 'No ' . strtolower($multipleName) . ' found in trash.'
       );
-      
+
       $argumentsToOverride = $argsOverrides;
       if (isset($argumentsToOverride['labels'])) {
         $argumentsToOverride['labels'] = array_merge($labels, $argumentsToOverride['labels']);
       }
-      
+
       $args = array_merge(array(
         'labels'             => $labels,
         'description'        => 'Key Post Type: ' . $singleName,
@@ -641,12 +632,12 @@ if (!class_exists('key_wpposttype')) {
         'has_archive'        => true,
         'supports'           => array('title', 'editor', 'revisions')
       ), $argumentsToOverride);
-    
+
       $args = apply_filters('key_wpposttype_postype_args', $args, $id);
       register_post_type($id, $args);
-  
+
       if (is_admin()) {
-        $postType = new key_wpposttype($id);  
+        $postType = new key_wpposttype($id);
         add_action('delete_post',            array($postType, 'deletedPost'),    $hooksPriority);
         add_action('trashed_post',           array($postType, 'trashedPost'),    $hooksPriority);
         add_action('untrashed_post',         array($postType, 'untrashedPost'),  $hooksPriority);
@@ -658,21 +649,21 @@ if (!class_exists('key_wpposttype')) {
     /*-------------------------*/
     public static function addTaxonomy($id, $singleName, $multipleName, $slug, $postTypes, $argsOverrides = array(), $hooksPriority = 20) {
       $toAttach = is_array($postTypes) ? $postTypes : array($postTypes);
-      
+
       $labels = array(
-        'name'              => $singleName, 
-        'singular_name'     => $singleName, 
+        'name'              => $singleName,
+        'singular_name'     => $singleName,
         'search_items'      => 'Search ' . $multipleName,
-        'all_items'         => 'All ' . $multipleName, 
+        'all_items'         => 'All ' . $multipleName,
         'parent_item'       => 'Parent ' . $singleName,
         'parent_item_colon' => 'Parent ' . $singleName . ':',
-        'edit_item'         => 'Edit ' . $singleName, 
+        'edit_item'         => 'Edit ' . $singleName,
         'update_item'       => 'Update ' . $singleName,
         'add_new_item'      => 'Add New ' . $singleName,
         'new_item_name'     => 'New ' . $singleName,
         'menu_name'         => $multipleName
       );
-    
+
       $argumentsToOverride = $argsOverrides;
       if (isset($argumentsToOverride['labels'])) {
         $argumentsToOverride['labels'] = array_merge($labels, $argumentsToOverride['labels']);
@@ -686,14 +677,13 @@ if (!class_exists('key_wpposttype')) {
         'query_var'         => true,
         'rewrite'           => array('slug' => $slug, 'with_front' => false),
       ), $argumentsToOverride);
-    
+
       $args = apply_filters('key_wpposttype_tax_args', $args, $id);
       register_taxonomy($id, $toAttach, $args);
-    
+
       if (is_admin()){
         $termType = new key_wpposttype($id);
-        add_action('edit_term',      array($termType, 'editTax'),   $hooksPriority, 3);
-        add_action('created_' . $id, array($termType, 'createTax'), $hooksPriority, 2);
+        add_action('saved_term',     array($termType, 'savedTax'),  $hooksPriority, 4);   
         add_action('delete_term',    array($termType, 'deleteTax'), $hooksPriority, 4);
       }
     }
@@ -754,7 +744,7 @@ if (!class_exists('key_wpdashboard')) {
       </table>
       <?php
     }
-  
+
     /*-------------------------*/
     public static function echoCheckbox($key, $title, $description, $label) {
       $optionValue = strval(get_option($key));
@@ -846,7 +836,7 @@ if (!class_exists('key_wpdashboard')) {
     public static function echoDashboardButton($params = array()) {
       $item = array_merge(array(
         'title' => '',
-        'description' => '',        
+        'description' => '',
         'imageUrl' => '',
         'page' => '',
         'slug' => '',
@@ -893,7 +883,7 @@ if (!class_exists('key_wpdashboard')) {
       }
       if ($item['issues'] > 0) {
         $issues .= '<div class="issues"><strong>' . $item['issuesText'] . ' </strong> <span class="key-issue-counter">' . $item['issues'] . '</span></div>' . PHP_EOL;
-      }      
+      }
       ?>
       <a class="key-dashboard-button" href="<?php echo($url) ?>"<?php echo($target) ?>>
         <div class="holder">
@@ -901,12 +891,12 @@ if (!class_exists('key_wpdashboard')) {
           if ($item['imageUrl'] != '') {
             echo('<img src="' . $item['imageUrl'] . '" />' . PHP_EOL);
           }
-          ?>          
+          ?>
           <div>
             <h3><?php echo($item['title']) ?></h3>
-            <p><?php echo($item['description']) ?></p> 
-            <?php echo($issues) ?>                   
-          </div>          
+            <p><?php echo($item['description']) ?></p>
+            <?php echo($issues) ?>
+          </div>
         </div>
       </a>
       <?php
@@ -929,7 +919,7 @@ if (!class_exists('key_wpdashboard')) {
         add_action('admin_enqueue_scripts', array(self::class, 'adminScripts'));
         self::$hasAddedHead = true;
       }
-    }  
+    }
 
     /*----------------------*/
     public static function frontHead() {
@@ -1000,10 +990,10 @@ CSS;
           width: 200px;
           padding: 2px;
           border: 1px solid #0073aa;
-        } 
+        }
         .key-dashboard-content {
           margin: 20px;
-        }      
+        }
         .key-img-text {
           display:-webkit-box;
           display:-ms-flexbox;
@@ -1020,7 +1010,7 @@ CSS;
           justify-content: flex-start;
         }
         .key-img-text img {
-          width: 300px;  
+          width: 300px;
         }
         .key-img-text div {
           margin: 10px 20px;
@@ -1043,7 +1033,7 @@ CSS;
           margin: 0 20px;
           text-align: left;
           }
-        } 
+        }
         .key-logo {
           display: block;
           margin: 0;
@@ -1131,7 +1121,7 @@ CSS;
           -ms-flex-direction: row;
           flex-direction: row;
           -ms-flex-wrap: wrap;
-          flex-wrap: wrap;    
+          flex-wrap: wrap;
         }
         @media all and (min-width: 850px) {
           .key-dashboard-button-group {
@@ -1139,7 +1129,7 @@ CSS;
             -ms-flex-pack: start;
             justify-content: flex-start;
           }
-        }        
+        }
 CSS;
 
         echo '<style>' . $css . '</style>';
@@ -1150,7 +1140,7 @@ CSS;
               multiple: false
             });
             fileFrame.on('select', function() {
-              var imageObj = fileFrame.state().get('selection').first().toJSON();        
+              var imageObj = fileFrame.state().get('selection').first().toJSON();
               if (eval("typeof imageObj") != 'undefined') {
                 var imgUrl = imageObj.url;
                 if (imageObj.hasOwnProperty('sizes') && imageObj.sizes.hasOwnProperty('medium')) {
@@ -1185,52 +1175,52 @@ SCRIPT;
 
     /*-----*/
     private static $keyLockSVG = <<<KEYSVG
-    <svg 
+    <svg
       xmlns="http://www.w3.org/2000/svg"
       xmlns:xlink="http://www.w3.org/1999/xlink"
-      viewBox="0 0 600 600" width="%d" height="%d">  
-      <path d=" M 300 25 C 147.692 25 25 147.692 25 300 L 
-                25 575 L 300 575 C 452.308 575 575 452.308 
-                575 300 C 575 147.692 452.308 25 300 25 Z  
-                M 358.173 442.788 L 228.077 442.788 C 222.788 
-                442.788 218.558 437.5 219.615 432.212 L 248.173 
-                303.173 C 249.231 296.827 254.519 290.481 
-                259.808 288.365 C 241.827 277.788 229.135 257.692 
-                229.135 234.423 C 229.135 199.519 257.692 170.962 
-                292.596 170.962 C 327.5 170.962 356.058 199.519 
-                356.058 234.423 C 356.058 257.692 343.365 277.788 
-                325.385 288.365 C 331.731 290.481 335.962 295.769 
-                337.019 303.173 L 365.577 432.212 C 367.692 437.5 
-                363.462 442.788 358.173 442.788 Z " 
+      viewBox="0 0 600 600" width="%d" height="%d">
+      <path d=" M 300 25 C 147.692 25 25 147.692 25 300 L
+                25 575 L 300 575 C 452.308 575 575 452.308
+                575 300 C 575 147.692 452.308 25 300 25 Z
+                M 358.173 442.788 L 228.077 442.788 C 222.788
+                442.788 218.558 437.5 219.615 432.212 L 248.173
+                303.173 C 249.231 296.827 254.519 290.481
+                259.808 288.365 C 241.827 277.788 229.135 257.692
+                229.135 234.423 C 229.135 199.519 257.692 170.962
+                292.596 170.962 C 327.5 170.962 356.058 199.519
+                356.058 234.423 C 356.058 257.692 343.365 277.788
+                325.385 288.365 C 331.731 290.481 335.962 295.769
+                337.019 303.173 L 365.577 432.212 C 367.692 437.5
+                363.462 442.788 358.173 442.788 Z "
       fill="%s"/>
     </svg>
 KEYSVG;
-   
+
     /*-----*/
     public static function keyDigitalWordpressMenuIcon() {
       return self::keyDigitalLockAsSVG(20, '#A5AAAE', true);
     }
-  
+
     /*-----*/
     public static function keyDigitalLockAsSVG($size = 400, $RBGColor = '#DC0A3B', $asBase64 = false) {
-     $res = trim(sprintf(self::$keyLockSVG, $size, $size, $RBGColor));  
+     $res = trim(sprintf(self::$keyLockSVG, $size, $size, $RBGColor));
       if ($asBase64) {
         $res = 'data:image/svg+xml;base64,' . base64_encode($res); ;
       }
-    
+
       return $res;
-    }  
+    }
 
     /*----------------------*/
 
   }
-} 
+}
 
 /*----------------------------*/
 /*--KEY_WPSITEMAP--------------*/
 /*----------------------------*/
 if (!class_exists('key_wpsitemap') && class_exists('WP_Sitemaps_Provider')) {
- 
+
   /*----------------------------*/
   class key_wpsitemap extends WP_Sitemaps_Provider {
     public $postTypes = array();
@@ -1238,8 +1228,8 @@ if (!class_exists('key_wpsitemap') && class_exists('WP_Sitemaps_Provider')) {
     /*---------------------*/
     public function __construct($name, $queryArgs, $objectType = 'post') {
       $this->name        = $name;
-      $this->queryArgs   = $queryArgs;    
-	  	$this->object_type = $objectType;
+      $this->queryArgs   = $queryArgs;
+      $this->object_type = $objectType;
     }
 
     /*---------------------*/
@@ -1255,8 +1245,8 @@ if (!class_exists('key_wpsitemap') && class_exists('WP_Sitemaps_Provider')) {
     /*--OVERRIDE-----------*/
     public function get_url_list($page_num, $post_type = '') {
       $query = new WP_Query($this->queryArgs());
-      $urlList = array();		
-    
+      $urlList = array();
+
       foreach($query->posts as $post) {
         $sitemapEntry = array(
           'changefreq' => 'weekly',
@@ -1264,7 +1254,7 @@ if (!class_exists('key_wpsitemap') && class_exists('WP_Sitemaps_Provider')) {
           'loc' => get_permalink($post),
           'lastmod' => get_the_modified_time('Y-m-d H:i:s', $post)
         );
-        
+
         $sitemapEntry = apply_filters('wp_sitemaps_posts_entry', $sitemapEntry, $post, $post_type);
         $urlList[] = $sitemapEntry;
 
@@ -1274,24 +1264,24 @@ if (!class_exists('key_wpsitemap') && class_exists('WP_Sitemaps_Provider')) {
           $urlList[] = $entry;
         }
       }
-    
+
       return $urlList;
     }
-    
+
     /*--OVERRIDE-----------*/
-    public function get_max_num_pages($post_type = '') {    
+    public function get_max_num_pages($post_type = '') {
       return 1;
     }
 
     /*---------------------*/
   }
-} 
+}
 
 /*----------------------------*/
 /*--KEY_WPTHEME--------------*/
 /*----------------------------*/
-if (!class_exists('key_wptheme')) { 
-  
+if (!class_exists('key_wptheme')) {
+
   define('KEY_WPTHEME_ADMINSTYLES_KEY', 'key-wptheme');
 
   define('KEY_WPTHEME_ENQUEUECONTEXT_STYLE',        'style');
@@ -1305,10 +1295,12 @@ if (!class_exists('key_wptheme')) {
   define('KEY_WPTHEME_MENUITEM_SEPARATOR3',      'separator-last');
   define('KEY_WPTHEME_MENUITEM_PAGES',           'edit.php?post_type=page');
   define('KEY_WPTHEME_MENUITEM_POSTS',           'edit.php');
+  define('KEY_WPTHEME_MENUITEM_COMMENTS',        'edit-comments.php');
   define('KEY_WPTHEME_MENUITEM_MEDIA',           'upload.php');
   define('KEY_WPTHEME_MENUITEM_MENUS',           'nav-menus.php');
   define('KEY_WPTHEME_MENUITEM_USERS',           'users.php');
   define('KEY_WPTHEME_MENUITEM_TOOLS',           'tools.php');
+  define('KEY_WPTHEME_MENUITEM_APPEARANCE',      'themes.php');
   define('KEY_WPTHEME_MENUITEM_PLUGINS',         'plugins.php');
   define('KEY_WPTHEME_MENUITEM_SETTINGS',        'options-general.php');
   define('KEY_WPTHEME_MENUITEM_GRAVITYFORMS',    'gf_edit_forms');
@@ -1320,7 +1312,8 @@ if (!class_exists('key_wptheme')) {
   define('KEY_WPTHEME_MENUITEM_KEYCAMPMANAGER',  'key-campmanager');
   define('KEY_WPTHEME_MENUITEM_KEYPROPHET',      'prophet-api');
   define('KEY_WPTHEME_MENUITEM_KEYHOLIDAYMAKER', 'holidaymaker');
-  define('KEY_WPTHEME_MENUITEM_KEYGEMAPARK',     'key-gema'); 
+  define('KEY_WPTHEME_MENUITEM_KEYGEMAPARK',     'key-gema');
+  define('KEY_WPTHEME_MENUITEM_KEYRMS',          'key-rms');
 
   /*----------------------------*/
   class key_wptheme {
@@ -1342,6 +1335,7 @@ if (!class_exists('key_wptheme')) {
     public $loginLogoParams = array();
     public $adminStylesParams = array();
     public $enqueueParams = array();
+    public $headerParams = array();
     public $menuOrderParams = array();
     public $siteMapParams = array();
 
@@ -1356,11 +1350,12 @@ if (!class_exists('key_wptheme')) {
       $newParams = array_merge(array(
         'files'            => array(),
         'init'             => array(),
+        'header'           => array(),
         'mapsKey'          => '',
       ), $params);
 
       $theme = wp_get_theme();
-      
+
       $this->name        = (($theme != null) && isset($theme->name)) ? $theme->name : 'Unknown Theme';
       $this->version     = (($theme != null) && isset($theme->version)) ? $theme->version : '0.0';
       $this->description = (($theme != null) && isset($theme->description)) ? $theme->description : '';
@@ -1374,13 +1369,14 @@ if (!class_exists('key_wptheme')) {
         $this->setupMapsKey();
       }
 
-      $this->setupInit($newParams['init']); 
+      $this->setupInit($newParams['init']);
+      $this->setupHeaderParams($newParams['header']);
       if (isset($newParams['enqueue']) && is_array($newParams['enqueue'])) {
         $this->setupScriptAndStyleEnqueue($newParams['enqueue']);
       }
       if (isset($newParams['copyright']) && is_array($newParams['copyright'])) {
         $this->setupCopyrightFooter($newParams['copyright']);
-      }     
+      }
       if (isset($newParams['sitemaps']) && is_array($newParams['sitemaps'])) {
         $this->setupSitemaps($newParams['sitemaps']);
       }
@@ -1395,12 +1391,12 @@ if (!class_exists('key_wptheme')) {
           $this->echoMenu = true;
         }
         $this->setupMenuOrder($newParams['menuOrder']);
-      }         
+      }
       if (isset($newParams['adminStyle']) && is_array($newParams['adminStyle'])) {
         $this->setupAdminStyles($newParams['adminStyle']);
       }
 
-      key_wpdashboard::enqueueHeader();      
+      key_wpdashboard::enqueueHeader();
     }
 
     /*----------------------*/
@@ -1451,13 +1447,13 @@ if (!class_exists('key_wptheme')) {
       $this->defineFolder('dynamic', $this->filesParams['dynamic'], true);
 
       $this->themeLogo = KEY_THEME_URI_IMAGE . $this->filesParams['logo'] . '?v=' . $this->version;
-      
+
       foreach($this->filesParams['includeFunctions'] as $include) {
         $filePath = sprintf('%sfunctions-%s.php', KEY_THEME_DIR_INC, $include);
         if (file_exists($filePath)) {
           include_once($filePath);
         }
-      }  
+      }
     }
 
     /*----------------------*/
@@ -1473,28 +1469,123 @@ if (!class_exists('key_wptheme')) {
     }
 
     /*----------------------*/
+    public const KEY_THEME_DEFAULT_REMOVEHEADER = array(
+      'rsd_link' => true,                           //Really Simply Discovery LInk
+      'wp_generator' => true,                       //Generator Link
+      'wlwmanifest_link' => true,                   //Windows Live writer manifest
+      'feed_links' => array('priority' => 2),       //Feed links
+      'feed_links_extra' => array('priority' => 3), //Feed links
+      'wp_shortlink_wp_head' => true,               //Short link
+      'wp_shortlink_header' => true,                //Short link
+      'adjacent_posts_rel_link_wp_head' => true,    //Relational adjacent links
+      'rest_output_link_wp_head' => true,           //Rest API link
+      'rest_output_link_header' => array(           //Rest API link
+        'priority' => 11, 
+        'action' => 'template_redirect'
+      ), 
+      'wp_oembed_add_discovery_links' => true,     //oEmbed discovery 
+      'wp_resource_hints' => false,                //Prefetches
+      'rel_canonical' => false,                    //Canonical Link  
+      'wp_site_icon' => array(                     // Favicon
+        'remove' => false, 
+        'priority' => 99
+      )  
+    );
+
+    /*----------------------*/
+    private function setupHeaderParams($params) {
+      $this->headerParams = array_merge(array(
+        'remove' => array(),
+        'meta' => array(),
+        'charset' => true,
+        'viewport' => "initial-scale=1.0, width=device-width",
+        'formatDetection' => "telephone=no"
+      ), $params);
+
+      $this->headerParams['remove'] = array_merge(static::KEY_THEME_DEFAULT_REMOVEHEADER, $this->headerParams['remove']);
+
+      if ($this->headerParams['charset'] !== false) {
+        $charset = is_string($this->headerParams['charset']) ? $this->headerParams['charset'] : get_bloginfo('charset');
+        if ($charset != '') {
+          $this->headerParams['meta']['charset'] = array('name' => '', 'charset' => $charset);
+        }
+      }
+
+      if (($this->headerParams['viewport'] !== false) && ($this->headerParams['viewport'] != '')) {
+        $this->headerParams['meta']['viewport'] = $this->headerParams['viewport'];
+      }
+
+      if (($this->headerParams['formatDetection'] !== false) && ($this->headerParams['formatDetection'] != '')) {
+        $this->headerParams['meta']['format-detection'] = $this->headerParams['formatDetection'];
+      }
+
+      if (count($this->headerParams['meta']) > 0) {
+        $this->action('wp_head', array($this, 'frontHead'), 5);
+      }
+    }
+
+    /*----------------------*/
+    private function renderMetaTags() {
+      foreach($this->headerParams['meta'] as $name => $value) {
+        $metaInfo = array_merge(array(
+          'name' => $name
+        ), is_array($value) ? $value : array('content' => $value));
+        $tagAttributes = '';
+        foreach($metaInfo as $attKey => $attVal) {
+          if ($attVal != '') {
+            $tagAttributes .= sprintf(' %s="%s"', $attKey, $attVal);
+          }
+        }
+        echo(sprintf('<meta %s>' . PHP_EOL, trim($tagAttributes)));
+
+      }
+    }
+
+    /*----------------------*/
     private function setupDefaultInitParams($params) {
       $this->initParams = array_merge(array(
         'titleTag' => true,
         'disableEmoji' => true,
+        'disableAutoUpdate' => true,
         'removePluginAds' => true,
         'disableGutenberg' => true,
         'ignoreAttachmentPermalinks' => false,
         'imageOptions' => array(),
         'hide' => array(),
+        'addMenusToAdmin' => false,
         'postSupport' => array(),
+        'postRename' => array(),
+        'postHooks' => array(),
+        'postTypes' => array(),
+        'taxonomies' => array(),
+        //'excerptLength' => 0,
+        //'excerptMore' => true,
         'themeSupport' => array(),
         'registerMenus' => array(),
         'woocommerce' => array(),
         'acf' => array(),
         'mail' => array()
-      ), $params);
+      ), $params);      
+
+      if ($this->initParams['addMenusToAdmin'] !== false) {
+        $this->initParams['addMenusToAdmin'] = array_merge(array(
+          'capability' => 'edit_pages',
+          'position' => 81,
+          'icon' => 'dashicons-list-view',
+          'doNotHideThemeingFor' => array('administrator')
+        ), (is_array($this->initParams['addMenusToAdmin']) ? $this->initParams['addMenusToAdmin'] : array()));
+      }
 
       if ($this->hasWooCommerce) {
         $this->initParams['woocommerce'] = array_merge(array(
           'removeStyles' => false,
           'removeBreadcrumb' => false,
           'removeRelated' => false,
+          'removeProductCount' => true,
+          'removeListingCount' => false,
+          'removeProductMeta' => false,
+          'allowProductTags' => true,
+          'removeProductTabs' => array(),
           'productImageExtras' => array(),
           'noProductImage' => 'noproduct.png'
         ), $this->initParams['woocommerce']);
@@ -1502,18 +1593,34 @@ if (!class_exists('key_wptheme')) {
 
       $this->initParams['imageOptions'] = array_merge(array(
         'sizes' => array(),
+        'sizeNames' => array(),
         'removeInlineStyles' => true,
         'removeCaptionWidth' => true,
+        'disableDefaultGalleryStyle' => true,
         'featuredImages' => true,
         'optimise' => array(),
         'mimes' => array(),
-      ), $this->initParams['imageOptions']);
+        'bigImageThreshold' => false,
+        'infiniteScrolling' => true
+        //'upscale' => false //TODO: This was 'croppedOnly' re add it in
+      ), $this->initParams['imageOptions']);      
+
+      //TODO: Fix
+      // $upscaleOptions = array('cropped' => true, 'uncropped' => true);
+      // if ($this->initParams['imageOptions']['upscale'] === false) {
+      //   $upscaleOptions['cropped']   = false;
+      //   $upscaleOptions['uncropped'] = false;
+      // } else if (is_string($this->initParams['imageOptions']['upscale'])) {
+      //   $upscaleOptions['cropped']   = $this->initParams['imageOptions']['upscale'] == 'croppedOnly';
+      //   $upscaleOptions['uncropped'] = $this->initParams['imageOptions']['upscale'] == 'uncroppedOnly';
+      // }
+      // $this->initParams['imageOptions']['upscale'] = $upscaleOptions;
 
       $this->initParams['imageOptions']['optimise'] = array_merge(array(
         'enabled' => false,
-        'jpegQuality' => 82, 
-        'pngQuality' => -1 
-      ), $this->initParams['imageOptions']['optimise']);  
+        'jpegQuality' => 82,
+        'pngQuality' => -1
+      ), $this->initParams['imageOptions']['optimise']);
 
       $this->initParams['themeSupport'] = array_merge(array(
         'title-tag' => $this->initParams['titleTag'],
@@ -1521,13 +1628,77 @@ if (!class_exists('key_wptheme')) {
         'responsive-embeds' => true,
         'html5' => array('comment-list', 'comment-form', 'search-form', 'gallery', 'caption', 'style', 'script')
       ), $this->initParams['themeSupport']);
+
+      if (isset($this->initParams['postSupport']['disableEditorForNonAdmins'])) {
+        if (!current_user_can('manage_options')) {
+          $postsTypesToRemove = is_array($this->initParams['postSupport']['disableEditorForNonAdmins']) ? $this->initParams['postSupport']['disableEditorForNonAdmins'] : array('post', 'page');
+          if (!isset($this->initParams['postSupport']['remove'])) {
+            $this->initParams['postSupport']['remove'] = array();
+          }
+          if (!isset($this->initParams['postSupport']['remove']['editor'])) {
+            $this->initParams['postSupport']['remove']['editor'] = array();
+          }
+
+          foreach($postsTypesToRemove as $postType) {
+            if (!in_array($postType, $this->initParams['postSupport']['remove']['editor'])) {
+              $this->initParams['postSupport']['remove']['editor'][] = $postType;
+            }
+          }
+        }
+        unset($this->initParams['postSupport']['disableEditorForNonAdmins']);
+      }
+    }
+
+    /*----------------------*/
+    private function addPostTypeOrTax($key, $params, $isTax) {
+      $registerParams = array_merge(array(
+        'single' => '',
+        'multiple' => '',
+        'slug' => '',
+        'postTypes' => array(),
+        'args' => array(),
+        'hooksPriority' => 20
+      ), $params);
+
+      if ($isTax) {
+        key_wpposttype::addTaxonomy(
+          $key,
+          $registerParams['single'],
+          $registerParams['multiple'],
+          $registerParams['slug'],
+          $registerParams['postTypes'],
+          $registerParams['args'],
+          $registerParams['hooksPriority']
+        );
+      } else {
+        key_wpposttype::addPostType(
+          $key,
+          $registerParams['single'],
+          $registerParams['multiple'],
+          $registerParams['slug'],
+          $registerParams['args'],
+          $registerParams['hooksPriority']
+        );
+      }
     }
 
     /*----------------------*/
     private function setupInit($params) {
       $this->action('init', array($this, 'init'));
+      //This doesn't use the $this->action as we want two different inits
+      add_action('init', array($this, 'initLate'), 999);
 
       $this->setupDefaultInitParams($params);
+
+      if ($this->initParams['imageOptions']['infiniteScrolling']) {
+        $this->filter('media_library_infinite_scrolling', '__return_true', 999);
+      }
+
+      if ($this->initParams['imageOptions']['disableDefaultGalleryStyle']) {
+        $this->filter('use_default_gallery_style', '__return_false', 999);
+      }
+
+      $this->filter('big_image_size_threshold', array($this, 'bigImageThreshold'), 999, 4);               
 
       foreach($this->initParams['themeSupport'] as $feature => $setting) {
         if (is_array($setting)) {
@@ -1537,6 +1708,10 @@ if (!class_exists('key_wptheme')) {
         } else {
           remove_theme_support($feature);
         }
+      }
+
+      if ($this->initParams['disableAutoUpdate']) {
+        $this->filter('automatic_updater_disabled', '__return_true', 9999);
       }
 
       if ($this->initParams['disableEmoji']) {
@@ -1555,31 +1730,38 @@ if (!class_exists('key_wptheme')) {
         $this->filter('attachment_link', array($this, 'attachmentLink'), 20, 2);
       }
 
-      if (isset($this->initParams['addMenusToAdmin'])) {
+      if ($this->initParams['addMenusToAdmin'] !== false) {
         $this->action('admin_menu', array($this, 'adminMenu'), 99);
       }
 
       if (count($this->initParams['hide']) > 0) {
-        $this->action('wp_enqueue_scripts', array($this, 'enqueueScriptsAndStyles'), 999);  
+        $this->action('wp_enqueue_scripts', array($this, 'enqueueScriptsAndStyles'), 999);
         $this->action('admin_menu', array($this, 'adminMenu'), 99);
         $this->filter('manage_edit-page_columns', array($this, 'postAndPageColumns'));
         $this->filter('manage_edit-post_columns', array($this, 'postAndPageColumns'));
-        $this->action('wp_before_admin_bar_render', array($this, 'beforeAdminBarRender'), 10);
+        $this->action('wp_before_admin_bar_render', array($this, 'beforeAdminBarRender'), 100);             
       }      
 
+      //TODO: Reintroduce once tested
+      // if (intval($this->initParams['excerptLength']) > 0) {
+      //   $this->filter('excerpt_length', array($this, 'excerptLength'), 999);
+      // }
+
+      // if ($this->initParams['excerptMore'] !== false) {
+      //   $this->filter('excerpt_more', array($this, 'excerptMore'), 999);
+      // }
+
       if (count($this->initParams['postSupport']) > 0) {
-        if (is_admin()) {
-          $this->action('admin_head', array($this, 'adminHead'), 10);
-        }
-        $this->action('wp_head',    array($this, 'frontHead'), 5);          
+        $this->action('wp_loaded', array($this, 'wpLoaded'));        
       }
 
       if (count($this->initParams['mail']) > 0) {
-        $this->filter('wp_mail_from', array($this, 'mailFrom'), 999);
-        $this->filter('wp_mail_from_name', array($this, 'mailFromName'), 999);
+        $this->filter('wp_mail_from',         array($this, 'mailFrom'),        999);
+        $this->filter('wp_mail_from_name',    array($this, 'mailFromName'),    999);
+        $this->filter('wp_mail_content_type', array($this, 'mailContentType'), 999);
       }
-
-      if ($this->hasWooCommerce) {        
+     
+      if ($this->hasWooCommerce) {
         add_theme_support('woocommerce');
 
         $gallaryFeatures = array('zoom', 'lightbox', 'slider');
@@ -1591,19 +1773,101 @@ if (!class_exists('key_wptheme')) {
             remove_theme_support('wc-product-gallery-' . $feature);
           }
         }
+
+        if (!$this->initParams['woocommerce']['allowProductTags']) {
+          $this->filter('manage_edit-product_columns', array($this, 'productColumns'));
+        }        
       }
     }
 
     /*----------------------*/
-    public function init() {   
+    public function initLate() {
+      foreach ($this->initParams['postRename'] as $postKey => $renameParams) {
+        $newRenameParams = is_array($renameParams) ? $renameParams : array('single' => strval($renameParams), 'multiple' => strval($renameParams) . 's');
+        $newRenameParams = array_merge(array('single' => '', 'multiple' => '', 'icon' => ''), $newRenameParams);
+        
+        $singular = $newRenameParams['single'];
+        $multiple = $newRenameParams['multiple'];
+        $multipleLower = strtolower($multiple);
+
+        $postType = get_post_type_object($postKey);
+        if ($postType != null) {
+          $postType->labels->name = $multiple;
+          $postType->labels->singular_name = $singular;
+          $postType->labels->add_new = 'Add ' . $singular;
+          $postType->labels->add_new_item = 'Add ' . $singular;
+          $postType->labels->edit_item = 'Edit ' . $singular;
+          $postType->labels->new_item = $singular;
+          $postType->labels->view_item = 'View ' . $singular;
+          $postType->labels->search_items = 'Search ' . $multiple;
+          $postType->labels->not_found = 'No ' . $multipleLower . ' found';
+          $postType->labels->not_found_in_trash = 'No ' . $multipleLower . ' found in Trash';
+          $postType->labels->all_items = 'All ' . $multiple;
+          $postType->labels->menu_name = $multiple;
+          $postType->labels->name_admin_bar = $multiple;
+        }
+        
+        if ($newRenameParams['icon'] != '') {
+          $postType->menu_icon = $newRenameParams['icon'];
+        }
+      }
+
+      foreach($this->headerParams['remove'] as $actionHook => $options) {
+        $params = array_merge(array(
+          'priority' => 10, 
+          'action' => 'wp_head',
+          'remove' => true
+        ), is_array($options) ? $options : array('remove' => $options));
+
+        if ($params['remove']) {
+          remove_action($params['action'], $actionHook, $params['priority']);
+        }
+      }
+
+      if ($this->hasWooCommerce && !$this->initParams['woocommerce']['allowProductTags']) {
+        unregister_taxonomy('product_tag');
+      }
+    }
+
+    /*----------------------*/
+    public function init() {
+      foreach($this->initParams['postTypes'] as $key => $params) {
+        $this->addPostTypeOrTax($key, $params, false);
+      }
+      foreach($this->initParams['taxonomies'] as $key => $params) {
+        $this->addPostTypeOrTax($key, $params, true);
+      }
+      if (count($this->initParams['postHooks']) > 0) {
+        key_wpposttype::attachHooksToPostTypes($this->initParams['postHooks']);
+      }
+
       if (count($this->initParams['imageOptions']['mimes']) > 0) {
         $this->action('upload_mimes', array($this, 'uploadMimes'));
       }
 
+      //TODO: Back in one day
+      // if ($this->initParams['imageOptions']['upscale']['cropped'] || $this->initParams['imageOptions']['upscale']['uncropped']) {
+      //   $this->filter('image_resize_dimensions', array($this, 'imageResizeDimensions'), 10, 6);
+      // }
+
       if (count($this->initParams['imageOptions']['sizes']) > 0) {
         foreach ($this->initParams['imageOptions']['sizes'] as $key => $size) {
-          add_image_size($key, $size['w'], $size['h'], $size['crop']);
+          $sizeDef = array_merge(array(
+            'w' => 100,
+            'h' => 0,
+            'crop' => false,
+            'name' => ''
+          ), $size);
+
+          add_image_size($key, $sizeDef['w'], $sizeDef['h'], $sizeDef['crop']);
+          if ($sizeDef['name'] != '') {
+            $this->initParams['imageOptions']['sizeNames'][$key] = $sizeDef['name'];
+          }
         }
+      }
+
+      if (count($this->initParams['imageOptions']['sizeNames']) > 0) {
+        $this->filter('image_size_names_choose', array($this, 'imageSizeNamesChoose'), 999);
       }
 
       if ($this->initParams['imageOptions']['removeInlineStyles']) {
@@ -1622,7 +1886,7 @@ if (!class_exists('key_wptheme')) {
         register_nav_menus();
       } else if (is_array($this->initParams['registerMenus']) && (count($this->initParams['registerMenus']) > 0)) {
         register_nav_menus($this->initParams['registerMenus']);
-      }
+      }      
 
       if ($this->hasWooCommerce) {
         add_filter('woocommerce_placeholder_img_src', function() {
@@ -1631,24 +1895,39 @@ if (!class_exists('key_wptheme')) {
 
         if ($this->initParams['woocommerce']['removeStyles']) {
           $this->filter('woocommerce_enqueue_styles', '__return_false');
-          $this->action('wp_enqueue_scripts', array($this, 'enqueueScriptsAndStyles'), 999);      
+          $this->action('wp_enqueue_scripts', array($this, 'enqueueScriptsAndStyles'), 999);
           $this->action('enqueue_block_assets', array($this, 'enqueueBlockAssets'));
         }
 
         if ($this->initParams['woocommerce']['removeBreadcrumb']) {
           remove_action('woocommerce_before_main_content', 'woocommerce_breadcrumb', 20, 0);
         }
-      
-        if ($this->initParams['woocommerce']['removeRelated']) {          
+
+        if ($this->initParams['woocommerce']['removeRelated']) {
           remove_action('woocommerce_after_single_product_summary', 'woocommerce_output_related_products', 20);
-        }    
+        }
+
+        if ($this->initParams['woocommerce']['removeProductCount']) {
+          add_filter('woocommerce_subcategory_count_html',  function() {
+            return;
+          });
+        }
+
+        if ($this->initParams['woocommerce']['removeListingCount']) {
+          remove_action('woocommerce_before_shop_loop', 'woocommerce_result_count', 20, 0);
+        }        
+        
+        if ($this->initParams['woocommerce']['removeProductMeta']) {
+          remove_action('woocommerce_single_product_summary', 'woocommerce_template_single_meta', 40);
+        }
+        
+        if (count($this->initParams['woocommerce']['removeProductTabs']) > 0) {
+          $this->filter('woocommerce_product_tabs', array($this, 'wooCommerceRemoveProductTabs'), 98);
+        }
       }
 
       if (class_exists('acf_pro')) {
-        add_filter('acf-flexible-content-preview.images_path', function($path) {
-          $imageFolder = isset($this->initParams['acf']['blocks']) ? trim($this->initParams['acf']['blocks'], '/') : 'acf'; 
-          return KEY_THEME_URI_IMAGE . $imageFolder;
-        });
+        $this->filter('acf-flexible-content-preview.images_path', array($this, 'acfFlexibleContentImagesPath'));
       }
 
       if (isset($this->siteMapParams['customSitemaps'])) {
@@ -1656,6 +1935,21 @@ if (!class_exists('key_wptheme')) {
           wp_register_sitemap_provider($siteMapKey, new key_wpsitemap($siteMapKey, $siteMapArgs));
         }
       }
+    }
+
+    /*----------------------*/
+    public function acfFlexibleContentImagesPath($path) {
+      $blocksPath = isset($this->initParams['acf']['blocks']) ? trim($this->initParams['acf']['blocks'], '/') : 'acf';
+      return trim($this->filesParams['image'] . '/' . $blocksPath, '/');
+    }
+
+    /*----------------------*/
+    public function wooCommerceRemoveProductTabs($tabs) {
+      $newTabs = $tabs;
+      foreach($this->initParams['woocommerce']['removeProductTabs'] as $tabKey) {
+        unset($tabs[$tabKey]);
+      }
+      return $newTabs;
     }
 
     /*----------------------*/
@@ -1675,6 +1969,28 @@ if (!class_exists('key_wptheme')) {
     }
 
     /*----------------------*/
+    public function mailContentType($contentType) {
+      if (isset($this->initParams['mail']['contentType']) && ($this->initParams['mail']['contentType'] != '')) {
+        return $this->initParams['mail']['contentType'];
+      }
+      return $contentType;
+    }
+
+    //TODO: Check again when have more time
+    // /*----------------------*/
+    // public function excerptLength($length) {
+    //   return intval($this->initParams['excerptLength']);
+    // }
+
+    // /*----------------------*/
+    // public function excerptMore($suffix) {
+    //   if ($this->initParams['excerptMore'] === true) {
+    //     return '...';
+    //   } 
+    //   return strval($this->initParams['excerptMore']);
+    // }
+
+    /*----------------------*/
     public function attachmentLink($link, $postID) {
       if ($this->initParams['ignoreAttachmentPermalinks']) {
         return wp_get_attachment_url($postID);
@@ -1690,27 +2006,74 @@ if (!class_exists('key_wptheme')) {
     }
 
     /*----------------------*/
-    public function uploadMimes($fileTypes) { 
+    public function uploadMimes($fileTypes) {
       return array_merge($fileTypes, $this->initParams['imageOptions']['mimes']);
+    }
+
+    /*----------------------*/
+    public function imageSizeNamesChoose($sizes) {
+      $newSizes = $sizes;
+      foreach ($this->initParams['imageOptions']['sizeNames'] as $key => $name){
+        if (($name === false) && isset($newSizes[$key])) {
+          unset($newSizes[$key]);
+        } else {
+          $newSizes[$key] = strval($name);
+        }
+      }
+      return $newSizes;
+    }
+
+    /*----------------------*/
+    public function bigImageThreshold($threshold, $imagesize, $file, $attachment_id) {
+      if ($this->initParams['imageOptions']['bigImageThreshold'] !== true) {
+        return $this->initParams['imageOptions']['bigImageThreshold'];
+      }
+      return $threshold;      
+    }
+
+    //TODO: Back in one day
+    /*----------------------
+    public function imageResizeDimensions($default, $orig_w, $orig_h, $new_w, $new_h, $crop){
+      if (($orig_w != 0) && ($orig_h != 0) && ($new_w != 0) && ($new_h != 0)) {
+        if ($crop && $this->initParams['imageOptions']['upscale']['cropped']) {
+          $sizeRatio = max(($new_w / $orig_w), ($new_h / $new_h));
+          if ($sizeRatio != 0) {
+            $crop_w = round($new_w / $sizeRatio);
+            $crop_h = round($new_h / $sizeRatio);
+  
+            $s_x = floor(($orig_w - $crop_w) / 2);
+            $s_y = floor(($orig_h - $crop_h) / 2);    
+            return array(0, 0, (int)$s_x, (int)$s_y, (int)$new_w, (int)$new_h, (int)$crop_w, (int)$crop_h);        
+          }     
+        } else if (!$crop && $this->initParams['imageOptions']['upscale']['uncropped']) {
+          $crop_w = $orig_w;
+          $crop_h = $orig_h;
+ 
+          $s_x = 0;
+          $s_y = 0;
+          return array(0, 0, (int)$s_x, (int)$s_y, (int)$new_w, (int)$new_h, (int)$crop_w, (int)$crop_h);
+        }
+      }
+      return $default; // let the WordPress default function handle this if other filters have not bee added
     }
 
     /*----------------------*/
     public function wpHandleUpload($data) {
       $filePath = $data['file'];
       $image = false;
-  
+
       switch ($data['type']) {
-        case 'image/jpeg': 
+        case 'image/jpeg':
           $image = imagecreatefromjpeg($filePath);
           if ($image !== false) {
             imagejpeg($image, $filePath, $imageOptions['optimise']['jpegQuality']);
             imagedestroy($image);
           }
-          break;    
-        case 'image/png': 
+          break;
+        case 'image/png':
           $image = imagecreatefrompng($filePath);
           if ($image !== false) {
-            imagepng($image, $filePath, $imageOptions['optimise']['pngQuality']); 
+            imagepng($image, $filePath, $imageOptions['optimise']['pngQuality']);
             imagedestroy($image);
           }
           break;
@@ -1723,7 +2086,29 @@ if (!class_exists('key_wptheme')) {
       if ($this->initParams['disableEmoji']) {
         remove_action('wp_head', 'print_emoji_detection_script', 7);
         remove_action('wp_print_styles', 'print_emoji_styles');
+        $this->removeResourceHint('https://s.w.org/images/core/emoji/13.0.0/svg/', 'dns-prefetch');
       }
+    }
+
+    /*----------------------*/
+    public static $resourceHintsToIgnore = array();
+    public function removeResourceHint($url, $type) {
+      $this->filter('wp_resource_hints', array($this, 'wpResourceHints'), 10, 2);
+      if (!key_exists($type, static::$resourceHintsToIgnore)) {
+        static::$resourceHintsToIgnore[$type] = array();
+      }
+      static::$resourceHintsToIgnore[$type][] = $url;
+    }
+
+    /*----------------------*/
+    public function wpResourceHints($urls, $type) {
+      if (key_exists($type, static::$resourceHintsToIgnore)) {
+        static::$resourceHintsToIgnore['working'] = static::$resourceHintsToIgnore[$type];
+        return array_filter($urls, function($url) {
+          return !in_array($url, static::$resourceHintsToIgnore['working']);
+        });
+      }
+      return $urls;
     }
 
     /*----------------------*/
@@ -1753,6 +2138,11 @@ if (!class_exists('key_wptheme')) {
       $this->action('admin_init',    array($this, 'adminInit'));
     }
 
+    /*---------------*/
+    public function adminStyleFileName() {
+      return isset($this->adminStylesParams['fileName']) ? basename($this->adminStylesParams['fileName']) : '';
+    }
+
     /*----------------------*/
     private function adminStylesExist() {
       $mainColour = isset($this->adminStylesParams['main']) ? $this->adminStylesParams['main'] : '#1c2337';
@@ -1760,7 +2150,7 @@ if (!class_exists('key_wptheme')) {
       $secAccent = isset($this->adminStylesParams['secAccent']) ? $this->adminStylesParams['secAccent'] : '#fde3e9';
 
       $fileName = isset($this->adminStylesParams['fileName']) ? $this->adminStylesParams['fileName'] : '';
-      if ($fileName == '') {           
+      if ($fileName == '') {
         $fileName = sprintf(
           '%s|%s|%s|%d',
           $mainColour,
@@ -1772,18 +2162,18 @@ if (!class_exists('key_wptheme')) {
         $fileName = str_replace(array('+', '/', '='), '',  base64_encode($fileName)) . '_key.min.css';
         $this->adminStylesParams['fileName'] = 'admin/' . $fileName;
       }
-      
+
       $filePath = KEY_THEME_DIR_STYLE . $this->adminStylesParams['fileName'];
       if (file_exists($filePath)) {
         return true;
       }
-      
+
       $styleSheet = self::keyAdminCssStyles();
       $styleSheet = str_replace(
         array('#MAINDARK#', '#PRIACCENT#', '#SECACCENT#'),
         array($mainColour, $priAccent, $secAccent),
         $styleSheet
-      );    
+      );
 
       //REVIEW REMOVE WHEN DEPENDENCY SYSTEM IS IN PLACE
       self::TEMPFUNCTION_FROM_KEYFILE_deleteFolder(KEY_THEME_DIR_STYLE . 'admin/');
@@ -1795,7 +2185,7 @@ if (!class_exists('key_wptheme')) {
       //REVIEW ADD BACK IN WHEN DEPENDENCY SYSTEM IS IN PLACE
       // key_file::deleteFolder($folderPath);
       // key_file::createFolder(KEY_THEME_DIR_STYLE);
-      // key_file::createFolder($folderPath);    
+      // key_file::createFolder($folderPath);
 
       file_put_contents($filePath, $styleSheet);
       return file_exists($filePath);
@@ -1803,42 +2193,47 @@ if (!class_exists('key_wptheme')) {
 
     /*-----*/
     //REVIEW REMOVE WHEN DEPENDENCY SYSTEM IS IN PLACE
-    public static function TEMPFUNCTION_FROM_KEYFILE_deleteFolder($dir) { 
+    public static function TEMPFUNCTION_FROM_KEYFILE_deleteFolder($dir) {
       if (!file_exists($dir)) {
         return false;
       }
-    
-      $files = array_diff(scandir($dir), array('.','..')); 
-      foreach ($files as $file) { 
+
+      $files = array_diff(scandir($dir), array('.','..'));
+      foreach ($files as $file) {
         $path = $dir . '/' . $file;
         if (is_dir($path)) {
           @self::deleteFolder($path);
-          @rmdir($path); 
+          @rmdir($path);
         } else {
           @unlink($path);
-        } 
-      } 
-      return rmdir($dir); 
-    } 
+        }
+      }
+      return rmdir($dir);
+    }
 
     /*----------------------*/
     public function adminInit() {
       if ((count($this->adminStylesParams) > 0) && $this->adminStylesExist()) {
         wp_admin_css_color(
-          KEY_WPTHEME_ADMINSTYLES_KEY, 
-          $this->adminStylesParams['themeName'], 
-          KEY_THEME_URI_STYLE . $this->adminStylesParams['fileName'],           
+          KEY_WPTHEME_ADMINSTYLES_KEY,
+          $this->adminStylesParams['themeName'],
+          KEY_THEME_URI_STYLE . $this->adminStylesParams['fileName'],
           array(
-            $this->adminStylesParams['main'], 
-            $this->adminStylesParams['priAccent'], 
+            $this->adminStylesParams['main'],
+            $this->adminStylesParams['priAccent'],
             $this->adminStylesParams['secAccent']
+          ),
+          array(
+            'base' => '#f3f1f1',
+            'focus' => $this->adminStylesParams['main'],
+            'current' => $this->adminStylesParams['main']
           )
         );
       }
     }
 
     /*----------------------*/
-    public function userRegister($userId) {      
+    public function userRegister($userId) {
       if ($this->adminStylesParams['applyToNewUsers'] && ($this->adminStylesExist())) {
         wp_update_user(array(
           'ID'          => $userId,
@@ -1856,6 +2251,15 @@ if (!class_exists('key_wptheme')) {
         'ignorePost' => array(),
         'customSitemaps' => array()
       ), $params);
+
+      if (isset($this->initParams['hide'])) {
+        if (in_array('categories', $this->initParams['hide']) && !in_array('category', $this->siteMapParams['ignoreTax'])) {
+          $this->siteMapParams['ignoreTax'][] = 'category';
+        }
+        if (in_array('tags', $this->initParams['hide']) && !in_array('post_tag', $this->siteMapParams['ignoreTax'])) {
+          $this->siteMapParams['ignoreTax'][] = 'post_tag';
+        }
+      }
 
       if (count($this->siteMapParams['ignoreTax']) > 0) {
         add_filter('wp_sitemaps_taxonomies', function($taxonomies) {
@@ -1876,35 +2280,59 @@ if (!class_exists('key_wptheme')) {
           return $newPostTypes;
         });
       }
-    }  
+    }
+
+    /*----------------------*/
+    private function addEnqueuedScriptToPreload($handle) {
+      if ($GLOBALS['wp_scripts']->query($handle, 'enqueued')) {
+        if (!isset($this->enqueueParams['preload']['script'])) {
+          $this->enqueueParams['preload']['script'] = array();
+        }
+
+        $scriptDef = isset($GLOBALS['wp_scripts']->registered[$handle]) ? $GLOBALS['wp_scripts']->registered[$handle] : null;
+        if ($scriptDef != null) {
+          $this->enqueueParams['preload']['script'][$handle] = array(
+            'href' => $GLOBALS['wp_scripts']->base_url . $scriptDef->src,
+            'ver'  => $scriptDef->ver
+          );
+        }
+      }
+    }
 
     /*----------------------*/
     private function renderPreloads() {
-      if (isset($this->enqueueParams['preload']) && (COUNT($this->enqueueParams['preload']) > 0)) {
-        echo(PHP_EOL . '<!-- START : key_wptheme preloads -->' . PHP_EOL);
-        foreach($this->enqueueParams['preload'] as $preloadType => $preloads) {
-          foreach($preloads as $preloadKey => $preload) {
-            $shouldAdd = true;
-            $shouldAdd = apply_filters('key_wptheme_preload', $shouldAdd, $preloadKey, $preloadType);
-            if ($shouldAdd) {  
-              $preloadParams = is_array($preload) ? $preload : array('file' => $preload);
-              
-              $preloadParams = array_merge(array(
-                'file' => '',
-                'href' => '',
-                'type' => '',
-                'ver' => false,
-                'crossorigin' => ''
-              ), $preloadParams);
-    
-              if (($preloadParams['file'] != '') || ($preloadParams['href'] != '')) {
-                $this->echoPreload($preloadKey, $preloadType, $preloadParams);
+      if (count($this->enqueueParams) > 0) {
+        foreach($this->enqueueParams['corePreloads'] as $corePreload) {
+          $this->addEnqueuedScriptToPreload($corePreload);
+        }      
+
+        if (isset($this->enqueueParams['preload']) && (count($this->enqueueParams['preload']) > 0)) {
+          echo(PHP_EOL . '<!-- START : key_wptheme preloads -->' . PHP_EOL);
+          foreach($this->enqueueParams['preload'] as $preloadType => $preloads) {
+            foreach($preloads as $preloadKey => $preload) {
+              $shouldAdd = true;
+              $shouldAdd = apply_filters('key_wptheme_preload', $shouldAdd, $preloadKey, $preloadType);
+              if ($shouldAdd) {
+                $preloadParams = is_array($preload) ? $preload : array('file' => $preload);
+
+                $preloadParams = array_merge(array(
+                  'file' => '',
+                  'href' => '',
+                  'type' => '',
+                  'ver' => false,
+                  'media' => 'all',
+                  'crossorigin' => ''
+                ), $preloadParams);
+
+                if (($preloadParams['file'] != '') || ($preloadParams['href'] != '')) {
+                  $this->echoPreload($preloadKey, $preloadType, $preloadParams);
+                }
               }
             }
-          }  
-        }
+          }
 
-        echo('<!-- END : key_wptheme preloads -->' . PHP_EOL . PHP_EOL);
+          echo('<!-- END : key_wptheme preloads -->' . PHP_EOL . PHP_EOL);
+        }
       }
     }
 
@@ -1928,35 +2356,38 @@ if (!class_exists('key_wptheme')) {
           $href = constant(sprintf('KEY_THEME_URI_%s', strtoupper($type))) . $preload['file'];
           if ($versionString != '') {
             $href .= '?' . $versionString;
-          } 
+          }
         } else {
-          $href = $preload['href'];                     
+          $href = $preload['href'];
           if ($versionString != '') {
             if (strpos($href, '?') !== false) {
-              $href .= '&#38;' . $versionString; 
+              $href .= '&#38;' . $versionString;
             } else {
               $href .= '?' . $versionString;
-            }   
-          }      
-        }           
-      }     
+            }
+          }
+        }
+      }
 
       $mime = ($preload['type'] != '') ? $preload['type'] : $this->getMimeFromHref($href, $type);
       if ($mime != '') {
         $mime = ' type="' . $mime . '"';
       }
-      
+
       $crossOrigin = ($preload['crossorigin'] === true) ? 'anonymous' : $preload['crossorigin'];
       if ($crossOrigin != '') {
         $crossOrigin = ' crossorigin="' . $crossOrigin . '"';
-      } 
+      }
 
-      echo(sprintf('<link id="preload-%s-%s" rel="preload" href="%s" as="%s"%s%s>' . PHP_EOL,
-        $type,  
-        $key,  
+      $media = ($type == 'style') ? ' media="' . $preload['media'] . '"' : '';
+
+      echo(sprintf('<link id="preload-%s-%s" rel="preload" href="%s" as="%s"%s%s%s>' . PHP_EOL,
+        $type,
+        $key,
         $href,
         $type,
         $mime,
+        $media,
         $crossOrigin
       ));
     }
@@ -1991,18 +2422,19 @@ if (!class_exists('key_wptheme')) {
           case 'mpeg'   : return 'video/mpeg';
           case 'aac'   : return 'audio/aac';
           case 'avi'   : return 'video/x-msvideo';
-
-        }      
+        }
       }
       return '';
     }
 
     /*----------------------*/
     public function setupScriptAndStyleEnqueue($params = array()) {
-      $this->enqueueParams = array_merge(array(
+      $this->enqueueParams = array_merge(array(        
+        'fileAgeVersions' => false,
         'themeStyle' => true,
         'themeStyleNotMinfied' => false,
         'themeStyleNotPreloaded' => false,
+        'themeStyleToBottom' => false,
         'dequeueBlockLibrary' => true,
         'customJQuery' => array(),
         'styles' => array(),
@@ -2012,71 +2444,95 @@ if (!class_exists('key_wptheme')) {
         'asyncScripts' => array(),
         'deregister' => array(),
         'preload' => array(),
+        'corePreloads' => array('jquery-core', 'jquery-migrate'),
         'crossOriginKeys' => array(),
-        'thickBox' => false
+        'thickBox' => false        
       ), $params);
-    
+
+      $this->enqueueParams['deregister'] = array_merge(
+        array('styles' => array(), 'scripts' => array()),
+        $this->enqueueParams['deregister']
+      );
+
       //Add theme style to styles array
       if ($this->enqueueParams['themeStyle']) {
         $minified = $this->enqueueParams['themeStyleNotMinfied'] ? '' : '.min';
+        $styleFile = 'style' . $minified . '.css';
         $themeStyleDef = array(
-          'href' => KEY_THEME_URI . 'style' . $minified . '.css'
+          'href' => KEY_THEME_URI . $styleFile
         );
         if ($this->enqueueParams['themeStyleNotPreloaded']) {
           $themeStyleDef['preload'] = false;
         }
-        $this->enqueueParams['styles'] = array_merge(array('theme-style' => $themeStyleDef), $this->enqueueParams['styles']);      
+        if ($this->enqueueParams['fileAgeVersions']) {
+          $styleFile = KEY_THEME_DIR . $styleFile;
+          if (file_exists($styleFile)) {
+            $themeStyleDef['ver'] = strval(filemtime($styleFile));
+          } 
+        }
+        $this->enqueueParams['styles'] = array_merge(array('theme-style' => $themeStyleDef), $this->enqueueParams['styles']);
       }
 
       //Deregister/Add custom JQuery
       $jQueryScriptDef = $this->enqueueParams['customJQuery'];
-      if (!is_array($jQueryScriptDef)) {     
-        $jQueryScriptDef = array('footer' => false);   
+      if (!is_array($jQueryScriptDef)) {
+        $jQueryScriptDef = array('footer' => false);
         if ($this->enqueueParams['customJQuery'] !== true) {
           $jQueryScriptDef['file'] = strval($this->enqueueParams['customJQuery']);
-        } 
-      }      
-      if (count($jQueryScriptDef) > 0) {
+        }
+      }
+
+      if (count($jQueryScriptDef) > 0) {   
+        $this->enqueueParams['corePreloads'] = array_filter($this->enqueueParams['corePreloads'], function($value){ return in_array($value, array('jquery-core', 'jquery-migrate')); });
         if (!isset($jQueryScriptDef['footer'])){
           $jQueryScriptDef['footer'] = false;
         }
         $jQueryScriptDef['deregister'] = true;
         $this->enqueueParams['scripts'] = array_merge(array('jquery' => $jQueryScriptDef), $this->enqueueParams['scripts']);
-      }
+      } 
 
       //Deregister/Add ThickBox
       if (is_array($this->enqueueParams['thickBox']) || ($this->enqueueParams['thickBox'] === true)) {
         $this->action('wp_footer', array($this, 'frontFooter'), 5);
 
-        if (isset($this->enqueueParams['deregister']) && isset($this->enqueueParams['deregister']['styles'])) {
-         unset($this->enqueueParams['deregister']['styles']['dashicons']);
-        }
-
         $this->enqueueParams['thickBox'] = array_merge(array(
           'ver' => $this->version,
-          'async' => false,     
+          'async' => false,
           'addClassTo' => array(),
           'jsStrings' => array()
-        ), is_array($this->enqueueParams['thickBox']) ? $this->enqueueParams['thickBox'] : array());  
-           
+        ), is_array($this->enqueueParams['thickBox']) ? $this->enqueueParams['thickBox'] : array());
+
         $this->enqueueParams['styles']['thickbox'] = array_merge(array(
           'href' => includes_url('js/thickbox/thickbox.css'),
           'deregister' => true,
           //'preload' => false
         ), $this->enqueueParams['thickBox']);
-        
+
         $this->enqueueParams['scripts']['thickbox'] = array_merge(array(
           'src' => includes_url('js/thickbox/thickbox.js'),
           'deregister' => true,
           'deps' => array('jquery'),
           'footer' => true
         ), $this->enqueueParams['thickBox']);
-      }      
+      }
+
+      if ($this->enqueueParams['fileAgeVersions']) {
+        $this->setFileAgeVersions('style');
+        $this->setFileAgeVersions('script');
+      }
+
+      if ($this->enqueueParams['themeStyleToBottom']) {
+        //Shift 'theme-style' to bottom if needed
+        $newStyles = $this->enqueueParams['styles'];
+        unset($newStyles['theme-style']);
+        $newStyles['theme-style'] = $this->enqueueParams['styles']['theme-style'];
+        $this->enqueueParams['styles'] = $newStyles;
+      }   
 
       //Find and assign preloads
       $this->collatePreloads('style');
-      $this->collatePreloads('script');  
-      
+      $this->collatePreloads('script');
+
       if ((count($this->enqueueParams['asyncScripts']) > 0) || (count($this->enqueueParams['crossOriginKeys']) > 0)) {
         $this->filter('style_loader_tag', array($this, 'styleLoader'), 10, 4);
         $this->filter('script_loader_tag', array($this, 'scriptLoader'), 10, 3);
@@ -2084,11 +2540,11 @@ if (!class_exists('key_wptheme')) {
 
       if (count($this->enqueueParams['preload']) > 0) {
         $this->action('wp_head', array($this, 'frontHead'), 5);
-      }           
+      }
 
       //Front and admin script actions
       if ($this->enqueueParams['dequeueBlockLibrary']
-          || (count($this->enqueueParams['styles']) > 0 ) 
+          || (count($this->enqueueParams['styles']) > 0 )
           || (count($this->enqueueParams['scripts']) > 0)){
         $this->action('wp_enqueue_scripts', array($this, 'enqueueScriptsAndStyles'), 999);
       }
@@ -2098,8 +2554,24 @@ if (!class_exists('key_wptheme')) {
     }
 
     /*----------------------*/
+    private function setFileAgeVersions($type) {
+      $newDefs = $this->enqueueParams[$type . 's'];
+      foreach($this->enqueueParams[$type . 's'] as $key => $def) {
+        if (!is_array($def) || (isset($def['file']) && ($def['file'] != ''))) {
+          $newDef = is_array($def) ? $def : array('file' => $def);
+          $filePath = constant(sprintf('KEY_THEME_DIR_%s', strtoupper($type))) . $newDef['file'];      
+          if (file_exists($filePath)) {
+            $newDef['ver'] = strval(filemtime($filePath));
+          } 
+          $newDefs[$key] = $newDef;
+        }
+      }
+      $this->enqueueParams[$type . 's'] = $newDefs;
+    }
+
+    /*----------------------*/
     private function collatePreloads($type) {
-      foreach($this->enqueueParams[$type . 's'] as $key => $def) {             
+      foreach($this->enqueueParams[$type . 's'] as $key => $def) {
         if (is_array($def) && isset($def['preload']) && ($def['preload'] === false)) {
           continue;
         }
@@ -2128,6 +2600,10 @@ if (!class_exists('key_wptheme')) {
           if (isset($preloadSpec['crossorigin'])) {
             $this->enqueueParams['crossOriginKeys'][$type . '-' . $key] = $preloadSpec['crossorigin'];
           }
+
+          if (!isset($preloadSpec['media'])) {            
+            $preloadSpec['media'] = isset($def['media']) ? $def['media'] : 'all';
+          }
         } else {
           $preloadSpec['file'] = $def;
           $preloadSpec['ver'] = $this->version;
@@ -2138,14 +2614,14 @@ if (!class_exists('key_wptheme')) {
     }
 
     /*----------------------*/
-    public function enqueueScriptsAndStyles() {   
-      if (count($this->enqueueParams) > 0) {  
+    public function enqueueScriptsAndStyles() {
+      if (count($this->enqueueParams) > 0) {
         if ($this->enqueueParams['dequeueBlockLibrary']) {
           wp_dequeue_style('wp-block-library');
-        }  
-  
+        }           
+
         foreach($this->enqueueParams['styles'] as $key => $value) {
-          if ($key == 'thickbox') {
+          if (($key == 'thickbox') && (!isset($this->enqueueParams['deregister']['styles']['dashicons']))) {
             wp_enqueue_style('dashicons');
           }
           $this->enqueueStyle($key, $value);
@@ -2153,32 +2629,37 @@ if (!class_exists('key_wptheme')) {
 
         foreach($this->enqueueParams['scripts'] as $key => $value) {
           $this->enqueueScript($key, $value);
-        }      
+        }   
 
-        if (count($this->enqueueParams['deregister']) > 0) {
-          $this->enqueueParams['deregister'] = array_merge(
-            array('styles' => array(), 'scripts' => array()), 
-            $this->enqueueParams['deregister']
-          );
+        //Deregister gutenburg styles
+        if ($this->initParams['disableGutenberg'] && !isset($this->enqueueParams['deregister']['styles']['global-styles'])) {
+          $this->enqueueParams['deregister']['styles']['global-styles'] = true;
+        }
 
-          foreach ($this->enqueueParams['deregister']['styles'] as $key => $deregister) {
-           $this->deregisterStyleOrScript($key, $deregister, true);
-          }
-          foreach ($this->enqueueParams['deregister']['scripts'] as $key => $deregister) {
-            $this->deregisterStyleOrScript($key, $deregister, false);
-           }
+        foreach ($this->enqueueParams['deregister']['styles'] as $key => $deregister) {
+          $this->deregisterStyleOrScript($key, $deregister, true);
+        }
+
+        foreach ($this->enqueueParams['deregister']['scripts'] as $key => $deregister) {
+          $this->deregisterStyleOrScript($key, $deregister, false);
+        }        
+
+        if (count($this->enqueueParams['asyncScripts']) > 0) {
+          $this->filter('script_loader_tag', array($this, 'scriptLoader'), 10, 3);
         }
       }
 
       if ($this->hasWooCommerce && ($this->initParams['woocommerce']['removeStyles'])) {
         wp_deregister_style('wc-block-style');
+        wp_deregister_style('wc-blocks-style');
         wp_deregister_style('wc-block-vendors-style');
+        wp_deregister_style('wc-blocks-vendors-style');
         wp_deregister_style('woocommerce-inline');
       }
 
       if (in_array('bar-yoast', $this->initParams['hide'])) {
-        wp_dequeue_style('yoast-seo-adminbar');         
-      } 
+        wp_dequeue_style('yoast-seo-adminbar');
+      }
     }
 
     /*----------------------*/
@@ -2200,7 +2681,7 @@ if (!class_exists('key_wptheme')) {
         } else {
           wp_deregister_script($key);
         }
-      } 
+      }
     }
 
     /*----------------------*/
@@ -2221,38 +2702,42 @@ if (!class_exists('key_wptheme')) {
     public function enqueueBlockAssets() {
       if ($this->hasWooCommerce && ($this->initParams['woocommerce']['removeStyles'])) {
         wp_deregister_style('wc-block-editor');
+        wp_deregister_style('wc-blocks-editor');
         wp_deregister_style('wc-block-style');
+        wp_deregister_style('wc-blocks-style');
         wp_deregister_style('wc-block-vendors-style');
+        wp_deregister_style('wc-blocks-vendors-style');
         wp_deregister_style('woocommerce-inline');
       }
     }
 
     /*----------------------*/
-    public function enqueueStyle($key, $value, $isAdmin = false) {     
+    public function enqueueStyle($key, $value, $isAdmin = false) {
       $styleArray = array_merge(array(
         'file' => '',
         'href' => '',
         'deps' => array(),
         'ver' => $this->version,
+        'media' => 'all',
         'deregister' => false
       ), (is_array($value) ? $value : array('file' => $value)));
-      
-      if ($styleArray['deregister']) {      
-        wp_deregister_style($key);	
+
+      if ($styleArray['deregister']) {
+        wp_deregister_style($key);
       }
 
-      $href = ($styleArray['href'] != '') ? $styleArray['href'] : (($styleArray['file']  != '') ? KEY_THEME_URI_STYLE . $styleArray['file'] : ''); 
-      
+      $href = ($styleArray['href'] != '') ? $styleArray['href'] : (($styleArray['file']  != '') ? KEY_THEME_URI_STYLE . $styleArray['file'] : '');
+
       if ($href != '') {
         $shouldEnqueue = true; //REVIEW Maybe some logic from array in future
         $shouldEnqueue = apply_filters('key_wptheme_enqueue', $shouldEnqueue, $key, ($isAdmin ? 'adminStyle' : 'style'));
         if ($shouldEnqueue) {
           if ($styleArray['deregister']) {
-            wp_register_style($key, $href, $styleArray['deps'], $styleArray['ver']);
+            wp_register_style($key, $href, $styleArray['deps'], $styleArray['ver'], $styleArray['media']);
             wp_enqueue_style($key);
           } else {
-            wp_enqueue_style($key, $href, $styleArray['deps'], $styleArray['ver']);
-          }               
+            wp_enqueue_style($key, $href, $styleArray['deps'], $styleArray['ver'], $styleArray['media']);
+          }
         }
       }
     }
@@ -2269,12 +2754,12 @@ if (!class_exists('key_wptheme')) {
         'deregister' => false
       ), (is_array($value) ? $value : array('file' => $value)));
 
-      if ($scriptArray['deregister']) {      
-        wp_deregister_script($key);	
+      if ($scriptArray['deregister']) {
+        wp_deregister_script($key);
       }
 
-      $src = ($scriptArray['src'] != '') ? $scriptArray['src'] : (($scriptArray['file']  != '') ? KEY_THEME_URI_SCRIPT . $scriptArray['file'] : ''); 
-      
+      $src = ($scriptArray['src'] != '') ? $scriptArray['src'] : (($scriptArray['file']  != '') ? KEY_THEME_URI_SCRIPT . $scriptArray['file'] : '');
+
       if ($src != '') {
         $shouldEnqueue = true; //REVIEW Maybe some logic from array in future
         $shouldEnqueue = apply_filters('key_wptheme_enqueue', $shouldEnqueue, $key, ($isAdmin ? 'adminScript' : 'script'));
@@ -2288,7 +2773,7 @@ if (!class_exists('key_wptheme')) {
             wp_enqueue_script($key);
           } else {
             wp_enqueue_script($key, $src, $scriptArray['deps'], $scriptArray['ver'], $scriptArray['footer']);
-          }          
+          }
         }
       }
     }
@@ -2297,7 +2782,7 @@ if (!class_exists('key_wptheme')) {
     function styleLoader($tag, $handle, $href, $media) {
       if (isset($this->enqueueParams['crossOriginKeys']['style-' . $handle])){
         $crossOrigin = ($this->enqueueParams['crossOriginKeys']['style-' . $handle] === true) ? "anonymous" : $this->enqueueParams['crossOriginKeys']['style-' . $handle];
-        return sprintf('<link rel="stylesheet" id="%s-css"  href="%s" type="text/css" media="%s" crossorigin="%s">' . PHP_EOL, 
+        return sprintf('<link rel="stylesheet" id="%s-css"  href="%s" type="text/css" media="%s" crossorigin="%s">' . PHP_EOL,
           $handle,
           $href,
           $media,
@@ -2309,17 +2794,20 @@ if (!class_exists('key_wptheme')) {
 
     /*----------*/
     function scriptLoader($tag, $handle, $src) {
-      $crossOrigin = '';
-      if (isset($this->enqueueParams['crossOriginKeys']['script-' . $handle])){
-        $crossOrigin = ' crossorigin="' . (($this->enqueueParams['crossOriginKeys']['script-' . $handle] === true) ? 'anonymous' : $this->enqueueParams['crossOriginKeys']['script-' . $handle]) . '"';
+      if (in_array($handle, $this->enqueueParams['asyncScripts']) ||  isset($this->enqueueParams['crossOriginKeys']['script-' . $handle])) {        
+        $crossOrigin = '';
+        if (isset($this->enqueueParams['crossOriginKeys']['script-' . $handle])){
+          $crossOrigin = ' crossorigin="' . (($this->enqueueParams['crossOriginKeys']['script-' . $handle] === true) ? 'anonymous' : $this->enqueueParams['crossOriginKeys']['script-' . $handle]) . '"';
+        }
+        $async = in_array($handle, $this->enqueueParams['asyncScripts']) ? ' async="async"' : '';
+        return sprintf('<script type="text/javascript" src="%s" id="%s-js"%s%s></script>' . PHP_EOL,
+          $src,
+          $handle,
+          $async,
+          $crossOrigin
+        );
       }
-      $async = in_array($handle, $this->enqueueParams['asyncScripts']) ? ' async="async"' : '';
-    	return sprintf('<script type="text/javascript" src="%s" id="%s-js"%s%s></script>' . PHP_EOL, 
-        $src, 
-        $handle, 
-        $async,
-        $crossOrigin
-      );
+      return $tag;
     }
 
     /*----------------------*/
@@ -2335,16 +2823,16 @@ if (!class_exists('key_wptheme')) {
     /*----------------------*/
     public function adminFooterText($orginalText) {
       $newText = '<span class="key-dashboard-footer">';
-      $newText .= $this->footerParams['content'] !='' ? $this->footerParams['content'] : 'Built by <a href="https://key.digital" target="_blank">Key.Digital</a> | &copy; Key.Digital Agency Limited ' . date('Y');
-    
+      $newText .= (($this->footerParams['content'] != '') ? $this->footerParams['content'] : 'Built by <a href="https://key.digital" target="_blank">Key.Digital</a> | &copy; Key.Digital Agency Limited ' . date('Y'));
+
       if ($this->footerParams['holidaymakerReady']) {
         $newText .= '<img src="' . self::holidaymakerSunSrc() . '" />holidaymaker ready! - <a href="http://holidaymakerapp.co.uk" target="_blank">more info</a>';
       }
-    
+
       if ($this->footerParams['poweredByHolidaymaker']) {
         $newText .= '<img src="' . self::holidaymakerSunSrc() . '" />Powered by holidaymaker - <a href="http://holidaymakerapp.co.uk" target="_blank">more info</a>';
       }
-    
+
       $newText .= '</span>';
       return $newText;
     }
@@ -2363,11 +2851,11 @@ if (!class_exists('key_wptheme')) {
       ), $params);
 
       $this->action('admin_menu', array($this, 'adminMenu'), 99);
-      
+
       if ($this->dashboardParams['overrideDashboard']) {
         $this->action('load-index.php', array($this, 'redirectDashboard'));
       } else if ($this->dashboardParams['redirectAfterLogin']) {
-        $this->filter('login_redirect', array($this, 'afterLoginPage')); 
+        $this->filter('login_redirect', array($this, 'afterLoginPage'));
       }
     }
 
@@ -2379,7 +2867,7 @@ if (!class_exists('key_wptheme')) {
           wp_redirect(admin_url('index.php?page=' . $this->dashboardParams['slug']));
         }
       }
-    } 
+    }
 
     /*-------------------------*/
     public function afterLoginPage() {
@@ -2389,32 +2877,36 @@ if (!class_exists('key_wptheme')) {
     /*----------*/
     public function beforeAdminBarRender() {
       global $wp_admin_bar;
-      
+
       if (isset($this->initParams['hide'])) {
         if (in_array('comments', $this->initParams['hide'])) {
           $wp_admin_bar->remove_menu('comments');
-        }    
-  
+        }
+
         if (in_array('themes', $this->initParams['hide'])) {
           $wp_admin_bar->remove_menu('customize');
           $wp_admin_bar->remove_menu('themes');
-        }   
-        
+        }
+
         if (in_array('bar-wordpress', $this->initParams['hide'])) {
           $wp_admin_bar->remove_menu('wp-logo');
-        } 
+        }
 
         if (in_array('bar-search', $this->initParams['hide'])) {
           $wp_admin_bar->remove_menu('search');
-        } 
+        }
 
         if (in_array('bar-yoast', $this->initParams['hide'])) {
-          $wp_admin_bar->remove_menu('wpseo-menu');          
-        } 
+          $wp_admin_bar->remove_menu('wpseo-menu');
+        }
 
         if (in_array('bar-new', $this->initParams['hide'])) {
           $wp_admin_bar->remove_menu('new-content');
-        } 
+        }
+
+        if (in_array('bar-forms', $this->initParams['hide'])) {
+          $wp_admin_bar->remove_menu('gform-forms');
+        }
       }
     }
 
@@ -2434,6 +2926,14 @@ if (!class_exists('key_wptheme')) {
       return $columns;
     }
 
+    /*----------*/
+    public function productColumns($columns) {
+      if (!$this->initParams['woocommerce']['allowProductTags']) {        
+        unset($columns['product_tag']);
+      }
+      return $columns;
+    }   
+
     /*-------------------------*/
     public function adminHead() {
       $this->commonHead();
@@ -2448,6 +2948,7 @@ if (!class_exists('key_wptheme')) {
       $this->commonHead();
 
       $this->renderPreloads();
+      $this->renderMetaTags();
     }
 
     /*-------------------------*/
@@ -2461,11 +2962,11 @@ if (!class_exists('key_wptheme')) {
           'close' => __('Close'),
           'noiframes' => __('This feature requires inline frames. You have iframes disabled or your browser does not support them.'),
           'loadingAnimation' => includes_url('js/thickbox/loadingAnimation.gif')
-        ), $this->enqueueParams['thickBox']['jsStrings']);  
+        ), $this->enqueueParams['thickBox']['jsStrings']);
         echo('<script type="text/javascript" id="thickbox-js-extra">' . PHP_EOL);
         echo('  //key_wptheme : ThickBox Localisation Strings' . PHP_EOL);
         echo('  var thickboxL10n = ' . json_encode($thickBoxLocalised) . ';' . PHP_EOL);
-        
+
         $addClassTo = array();
         if (is_array($this->enqueueParams['thickBox']['addClassTo'])) {
           $addClassTo = $this->enqueueParams['thickBox']['addClassTo'];
@@ -2477,24 +2978,24 @@ if (!class_exists('key_wptheme')) {
           $classes = implode(',', $addClassTo);
           echo('  //key_wptheme : ThickBox Add class to selectors' . PHP_EOL);
           echo('  jQuery(document).ready(function() {' . PHP_EOL);
-          echo('    jQuery("' . $classes . '").addClass("thickbox");' . PHP_EOL);            
+          echo('    jQuery("' . $classes . '").addClass("thickbox");' . PHP_EOL);
           echo('  });' . PHP_EOL);
-        }        
+        }
 
         echo('</script>' . PHP_EOL);
       }
     }
 
-    /*-------------------------*/
-    private function commonHead() {
+    /*-----------*/
+    public function wpLoaded() {
       if (isset($this->initParams['postSupport']['remove']) && is_array($this->initParams['postSupport']['remove'])) {
         foreach ($this->initParams['postSupport']['remove'] as $feature => $postTypes) {
           if (is_array($postTypes)) {
             foreach($postTypes as $postType) {
-              remove_post_type_support($postType, $feature); 
+              remove_post_type_support($postType, $feature);
             }
           } else {
-            remove_post_type_support($postTypes, $feature); 
+            remove_post_type_support($postTypes, $feature);
           }
         }
       }
@@ -2503,17 +3004,22 @@ if (!class_exists('key_wptheme')) {
         foreach ($this->initParams['postSupport']['add'] as $feature => $postTypes) {
           if (is_array($postTypes)) {
             foreach($postTypes as $postType) {
-              add_post_type_support($postType, $feature); 
+              add_post_type_support($postType, $feature);
             }
           } else {
-            add_post_type_support($postTypes, $feature); 
+            add_post_type_support($postTypes, $feature);
           }
         }
       }
     }
 
     /*-------------------------*/
-    public function adminMenu() {      
+    private function commonHead() {
+      //Currently empty
+    }
+
+    /*-------------------------*/
+    public function adminMenu() {
       if (isset($this->initParams['hide'])) {
         if (in_array('comments', $this->initParams['hide'])) {
           remove_menu_page('edit-comments.php');
@@ -2521,33 +3027,50 @@ if (!class_exists('key_wptheme')) {
         if (in_array('themes', $this->initParams['hide'])) {
           remove_menu_page('themes.php');
         }
+        if (in_array('tools', $this->initParams['hide'])) {
+          remove_menu_page('tools.php');
+        }
         if (in_array('categories', $this->initParams['hide'])) {
           remove_submenu_page('edit.php', 'edit-tags.php?taxonomy=category');
-          remove_meta_box('categorydiv', 'post', 'normal'); 
+          remove_meta_box('categorydiv', 'post', 'normal');
         }
         if (in_array('tags', $this->initParams['hide'])) {
           remove_submenu_page('edit.php', 'edit-tags.php?taxonomy=post_tag');
-          remove_meta_box('tagsdiv-post_tag', 'post', 'normal'); 
+          remove_meta_box('tagsdiv-post_tag', 'post', 'normal');
+        }
+        if (in_array('posts', $this->initParams['hide'])) {
+          remove_menu_page('edit.php');
+        }
+        if (in_array('pages', $this->initParams['hide'])) {
+          remove_menu_page('edit.php?post_type=page');
         }
       }
 
-      if (isset($this->initParams['addMenusToAdmin'])) {
-        $addMenuParams = array_merge(array(
-          'capability' => 'edit_pages',
-          'position' => 81,
-          'icon' => 'dashicons-list-view'
-        ), $this->initParams['addMenusToAdmin']);
-        add_menu_page('Menus', 'Menus', $addMenuParams['capability'], 'nav-menus.php', null, $addMenuParams['icon'], $addMenuParams['position']);
+      if ($this->initParams['addMenusToAdmin'] !== false) {
+        $shouldKeepThemeingMenu = false;
+        $currentUser = wp_get_current_user();
+        foreach($currentUser->roles as $role) {
+          if (in_array($role, $this->initParams['addMenusToAdmin']['doNotHideThemeingFor'])) {
+            $shouldKeepThemeingMenu = true;
+            break;
+          }
+        }
+
+        if (!$shouldKeepThemeingMenu) {
+          remove_menu_page('themes.php');
+        }
+
+        add_menu_page('Menus', 'Menus', $this->initParams['addMenusToAdmin']['capability'], 'nav-menus.php', null, $this->initParams['addMenusToAdmin']['icon'], $this->initParams['addMenusToAdmin']['position']);
       }
 
       if (count($this->dashboardParams) > 0) {
         global $menu;
-        
+
         $icon = ($this->dashboardParams['icon'] != '') ? $this->dashboardParams['icon'] : key_wpdashboard::keyDigitalWordpressMenuIcon();
-          
+
         if ($this->dashboardParams['overrideDashboard']) {
           add_submenu_page('index.php', $this->dashboardParams['title'], $this->dashboardParams['title'], $this->dashboardParams['capability'], $this->dashboardParams['slug'], array($this, 'renderDashboard'));
-        
+
           $indexToReplace = -1;
           if (isset($menu) && (is_array($menu))) {
             foreach($menu as $index => $menuItem) {
@@ -2557,7 +3080,7 @@ if (!class_exists('key_wptheme')) {
               }
             }
           }
-        
+
           if ($indexToReplace != -1) {
             $menu[$indexToReplace][4] = str_replace('menu-icon-dashboard', 'menu-icon-dashboard1', $menu[$indexToReplace][4]);
             $menu[$indexToReplace][6] = $icon;
@@ -2582,12 +3105,27 @@ if (!class_exists('key_wptheme')) {
     public function setupLoginLogo($params = array()) {
       $this->loginLogoParams = array_merge(array(
         'image' => '',
+        'url' => true,
+        'title' => true,
+        'allowLanguageSelection' => false,
         'width' => '300px',
         'height' => '220px',
         'background-size' => '100% 100%',
         'background-repeat' => 'no-repeat',
-        'padding-bottom' => '30px'
+        'padding-bottom' => '30px',        
       ), $params);
+
+      if (!$this->loginLogoParams['allowLanguageSelection']) {
+        $this->filter('login_display_language_dropdown', '__return_false', 999);
+      }      
+
+      if ($this->loginLogoParams['url'] !== false) {
+        $this->filter('login_headerurl', array($this, 'loginHeaderUrl'), 999);
+      }
+
+      if ($this->loginLogoParams['title'] !== false) {
+        $this->filter('login_headertext', array($this, 'loginHeaderTitle'), 999);
+      }      
 
       $this->action('login_enqueue_scripts', array($this, 'loginScripts'));
     }
@@ -2601,40 +3139,86 @@ if (!class_exists('key_wptheme')) {
       }
 
       foreach($this->loginLogoParams as $key => $value) {
-        if (($key != 'image') && ($key != '') && ($value != '')) {
+        $keysToIgnore = array('image', 'url', 'title', 'allowLanguageSelection');
+        if (($key != '') && !in_array($key, $keysToIgnore) && ($value != '')) {
           echo(sprintf('%s: %s;', $key, $value));
         }
       }
       echo('} </style>');
     }
+    
+    /*----------------------*/
+    public function loginHeaderTitle($title) {
+      if ($this->loginLogoParams['title'] === true) {
+        return get_bloginfo('name');
+      } else if ($this->loginLogoParams['title'] != '') {
+        return $this->loginLogoParams['title'];
+      }
+      return $title;
+    }
+
+    /*----------------------*/
+    public function loginHeaderUrl($url) {
+      if ($this->loginLogoParams['url'] === true) {
+        return get_site_url();
+      } else if ($this->loginLogoParams['url'] != '') {
+        return $this->loginLogoParams['url'];
+      }
+      return $url;
+    }
 
     /*----------------------*/
     private function setupMenuOrder($params) {
       $this->menuOrderParams = $params;
-      
+
       $this->filter('custom_menu_order', array($this, 'menuOrder'), 999, 1);
       $this->filter('menu_order',        array($this, 'menuOrder'), 999, 1);
     }
 
     /*----------------------*/
-    public function menuOrder($menuOrder) {      
+    public function menuOrder($menuOrder) {
       if (!$menuOrder) {
         return true;
       }
-      
+
+      if (!is_array($menuOrder)) {
+        return $menuOrder;
+      }
+
       if ($this->echoMenu) {
         die('<h1>MENU ORDER</h1>' . PHP_EOL . '<pre>' . print_r($menuOrder, true) . '</pre>' . PHP_EOL);
       }
 
       $newMenu = $this->menuOrderParams;
-
       foreach($menuOrder as $menu) {
         if (!in_array($menu, $newMenu)) {
           $newMenu[] = $menu;
         }
       }
-    
+
       return $newMenu;
+    }
+
+    /*----------------------*/
+    public function triggerOneOffProcessess() {
+      $this->addOrRemoveMenusRole();
+    }
+
+    /*----------------------*/
+    public function addOrRemoveMenusRole() {
+      global $wp_roles;
+
+      if ($this->initParams['addMenusToAdmin'] !== false) {
+        //REVIEW: This uses 'list_users' to define if it should have 'edit_theme_options'
+        $menusCapability = isset($this->initParams['addMenusToAdmin']) ? $this->initParams['addMenusToAdmin']['capability'] : 'list_users';
+        foreach($wp_roles->role_objects as $role) {
+          if ($role->has_cap($menusCapability)) {
+            $role->add_cap('edit_theme_options');
+          } else {
+            $role->remove_cap('edit_theme_options');
+          }
+        }
+      }
     }
 
     /*----------------------*/
@@ -2645,7 +3229,7 @@ if (!class_exists('key_wptheme')) {
         self::loadTheme();
       }
       return self::$theme;
-    }   
+    }
 
     /*----------------------*/
     public static function hasTheme() {
@@ -2655,17 +3239,17 @@ if (!class_exists('key_wptheme')) {
     /*----------------------*/
     public static function loadTheme($params = array()) {
       self::$theme = new key_wptheme($params);
-    }    
+    }
 
     /*----------------------*/
     public static function version() {
       return self::theme()->version;
-    }   
-    
+    }
+
     /*----------------------*/
     public static function mapsKey() {
       return self::theme()->mapsKey;
-    }  
+    }
 
     /*----------------------*/
     /*--DRAWING-------------*/
@@ -2731,7 +3315,7 @@ if (!class_exists('key_wptheme')) {
       $newParams = $params;
       if (isset($newParams['image'])) {
         $ext = isset($newParams['imageExt']) ? strtolower(trim($newParams['imageExt'], '.')) : 'svg';
-              
+
         $newParams['imageUrl'] = sprintf('%s%s.%s?v=%s',
           KEY_THEME_URI_IMAGE,
           $newParams['image'],
@@ -2766,14 +3350,14 @@ if (!class_exists('key_wptheme')) {
       echo('    <h1>' . $title . ' </h1>' . PHP_EOL);
       echo('    <p><strong>Version:</strong> ' . self::$theme->version . '</p>' . PHP_EOL);
       echo('  </div>' . PHP_EOL);
-      echo('</div>' . PHP_EOL);  
+      echo('</div>' . PHP_EOL);
     }
 
     /*----------------------*/
     public static function echoPoweredByHolidaymaker($titleOverride = '', $messageOverride = '') {
       $title = ($titleOverride != '') ? $titleOverride : 'Powered by holidaymaker';
       $message = ($messageOverride != '') ? $messageOverride : 'For more information on what holidaymaker has to offer, and to keep up-to-date with new additions visit <strong><a href="https://www.holidaymakerapp.co.uk/">holidaymakerapp.co.uk</a></strong>';
-      
+
       echo('<hr />' . PHP_EOL);
       echo('<div class="key-dashboard-content key-img-text">' . PHP_EOL);
       echo('  <img class="key-logo" src="' . key_wptheme::poweredByHolidayMakerImageSrc() . '" />' . PHP_EOL);
@@ -2781,22 +3365,22 @@ if (!class_exists('key_wptheme')) {
       echo('    <h1>' . $title . ' </h1>' . PHP_EOL);
       echo('    <p>' . $message . '</p>' . PHP_EOL);
       echo('  </div>' . PHP_EOL);
-      echo('</div>' . PHP_EOL);      
+      echo('</div>' . PHP_EOL);
     }
 
     /*----------------------*/
     public static function echoHolidaymakerReady($titleOverride = '', $messageOverride = '') {
       $title = ($titleOverride != '') ? $titleOverride : 'Holidaymaker ready!';
       $message = ($messageOverride != '') ? $messageOverride : 'This website can be converted to the holidaymaker infrastructure to display your data in mobile apps, digital signage, kiosks, and other surfaces. For more information on what holidaymaker has to offer, and to keep up-to-date with new additions visit <b><a href="https://www.holidaymakerapp.co.uk/">holidaymakerapp.co.uk</a></b>';
-      
+
       echo('<hr />' . PHP_EOL);
       echo('<div class="key-dashboard-content key-img-text">' . PHP_EOL);
       echo('  <img class="key-logo" src="' . key_wptheme::holidayMakerReadyImageSrc() . '" />' . PHP_EOL);
       echo('  <div>' . PHP_EOL);
       echo('    <h1>' . $title . ' </h1>' . PHP_EOL);
       echo('    <p>' . $message . '</p>' . PHP_EOL);
-      echo('  <div>' . PHP_EOL);
-      echo('<div>' . PHP_EOL);      
+      echo('  </div>' . PHP_EOL);
+      echo('</div>' . PHP_EOL);
     }
 
     /*----------------------*/
@@ -2826,7 +3410,7 @@ if (!class_exists('key_wptheme')) {
 "uOC41LS42LjgtLjguN2MtLjUuNC0xIDEtMS4zIDEuNS0uNC41LS4xIDEuMy4zIDEuNy40LjQuOC41IDEuMy42aC4xbC4yLjFoLjFsLjMuMWMuMi4xLjQuMi42LjFsLjMtLjEuMy0uMmMuMiAwIC40L" .
 "S4yLjYtLjRsLjItLjMuMi0uMS40LS42LjMtLjZjLjMtLjUuNC0xLjEuNS0xLjYgMC0uMy4yLS41LjMtLjdsLjQtMSAuMi0uNHYtLjRjLjItLjIuMS0uNS0uMi0uNU0xMS4xIDMwLjJWMzBjLS4zLS4" .
 "yLS4zLS42LS42LS44bC0xLjItLjZBOCA4IDAgMDA3IDI4SDQuNWMtLjkgMC0xLjctLjItMi41LS4zLS43IDAtMS40IDAtMS44Ljd2MWMwIC41LjEgMSAuNCAxLjMuMi4zLjMuOC42IDEgLjUuMiAxI" .
-"C4yIDEuNC4yLjkuMiAxLjcuMSAyLjYuMS42IDAgMSAwIDEuNi0uMkw4IDMxYy40LS4yIDEtLjIgMS41LS4zSDEwLjhjLjMtLjEuNC0uNS4zLS42Ii8+PC9nPjwvc3ZnPg==";  
+"C4yIDEuNC4yLjkuMiAxLjcuMSAyLjYuMS42IDAgMSAwIDEuNi0uMkw4IDMxYy40LS4yIDEtLjIgMS41LS4zSDEwLjhjLjMtLjEuNC0uNS4zLS42Ii8+PC9nPjwvc3ZnPg==";
 return 'data:image/svg+xml;base64,' . $image;
     }
 
@@ -3232,126 +3816,126 @@ return 'data:image/svg+xml;base64,' . $image;
 
     /*----------------------*/
     public static function keyAdminCssStyles() {
-      $keyAdminCssStyles = "body{background:#f1f1f1}a{color:#MAINDARK#}a:active,a:focus,a:hover{color:#PRIACCENT#}#post-body #visibility:before,#post-body .misc-pub-post-status:b" . 
-      "efore,#post-body .misc-pub-revisions:before,.curtime #timestamp:before,span.wp-media-buttons-icon:before{color:currentColor}.wp-core-ui .button-link{c" . 
-      "olor:#0073aa}.wp-core-ui .button-link:active,.wp-core-ui .button-link:focus,.wp-core-ui .button-link:hover{color:#0096dd}.media-modal .delete-attachme" . 
-      "nt,.media-modal .trash-attachment,.media-modal .untrash-attachment,.wp-core-ui .button-link-delete{color:#a00}.media-modal .delete-attachment:focus,.m" . 
-      "edia-modal .delete-attachment:hover,.media-modal .trash-attachment:focus,.media-modal .trash-attachment:hover,.media-modal .untrash-attachment:focus,." . 
-      "media-modal .untrash-attachment:hover,.wp-core-ui .button-link-delete:focus,.wp-core-ui .button-link-delete:hover{color:#dc3232}input[type=checkbox]:c" . 
-      "hecked::before{content:url(data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2020%2020%27%3E%3C" . 
-      "path%20d%3D%27M14.83%204.89l1.34.94-5.81%208.38H9.02L5.78%209.67l1.34-1.25%202.57%202.4z%27%20fill%3D%27%237e8993%27%2F%3E%3C%2Fsvg%3E)}input[type=rad" . 
-      "io]:checked::before{background:#7e8993}.wp-core-ui input[type=reset]:active,.wp-core-ui input[type=reset]:hover{color:#0096dd}input[type=checkbox]:foc" . 
-      "us,input[type=color]:focus,input[type=date]:focus,input[type=datetime-local]:focus,input[type=datetime]:focus,input[type=email]:focus,input[type=month" . 
-      "]:focus,input[type=number]:focus,input[type=password]:focus,input[type=radio]:focus,input[type=search]:focus,input[type=tel]:focus,input[type=text]:fo" . 
-      "cus,input[type=time]:focus,input[type=url]:focus,input[type=week]:focus,select:focus,textarea:focus{border-color:#PRIACCENT#;-webkit-box-shadow:0 0 0 " . 
-      "1px #PRIACCENT#;box-shadow:0 0 0 1px #PRIACCENT#}.wp-core-ui .button{border-color:#7e8993;color:#32373c}.wp-core-ui .button.focus,.wp-core-ui .button." . 
-      "hover,.wp-core-ui .button:focus,.wp-core-ui .button:hover{border-color:#717c87;color:#262a2e}.wp-core-ui .button.focus,.wp-core-ui .button:focus{borde" . 
-      "r-color:#7e8993;color:#262a2e;-webkit-box-shadow:0 0 0 1px #32373c;box-shadow:0 0 0 1px #32373c}.wp-core-ui .button:active{border-color:#7e8993;color:" . 
-      "#262a2e;-webkit-box-shadow:none;box-shadow:none}.wp-core-ui .button.active,.wp-core-ui .button.active:focus,.wp-core-ui .button.active:hover{border-co" . 
-      "lor:#PRIACCENT#;color:#262a2e;-webkit-box-shadow:inset 0 2px 5px -3px #PRIACCENT#;box-shadow:inset 0 2px 5px -3px #PRIACCENT#}.wp-core-ui .button.acti" . 
-      "ve:focus{-webkit-box-shadow:0 0 0 1px #32373c;box-shadow:0 0 0 1px #32373c}.wp-core-ui .button,.wp-core-ui .button-secondary{color:#MAINDARK#;border-c" . 
-      "olor:#MAINDARK#}.wp-core-ui .button-secondary:hover,.wp-core-ui .button.hover,.wp-core-ui .button:hover{background:#f0f0f0;color:#MAINDARK#}.wp-core-u" . 
-      "i .button-secondary:focus,.wp-core-ui .button.focus,.wp-core-ui .button:focus{border-color:#MAINDARK#;color:#MAINDARK#;-webkit-box-shadow:0 0 0 1px #M" . 
-      "AINDARK#;box-shadow:0 0 0 1px #MAINDARK#}.wp-core-ui .button-primary:hover{color:#fff}.wp-core-ui .button-primary{background:#PRIACCENT#;border-color:" . 
-      "#PRIACCENT#;color:#fff}.wp-core-ui .button-primary:focus,.wp-core-ui .button-primary:hover{background:#PRIACCENT#;border-color:#PRIACCENT#;color:#fff}" . 
-      ".wp-core-ui .button-primary:focus{-webkit-box-shadow:0 0 0 1px #fff,0 0 0 3px #PRIACCENT#;box-shadow:0 0 0 1px #fff,0 0 0 3px #PRIACCENT#}.wp-core-ui " . 
-      ".button-primary:active{background:#PRIACCENT#;border-color:#PRIACCENT#;color:#fff}.wp-core-ui .button-primary.active,.wp-core-ui .button-primary.activ" . 
-      "e:focus,.wp-core-ui .button-primary.active:hover{background:#PRIACCENT#;color:#fff;border-color:#PRIACCENT#;-webkit-box-shadow:inset 0 2px 5px -3px #1" . 
-      "50b04;box-shadow:inset 0 2px 5px -3px #150b04}.wp-core-ui .button-group>.button.active{border-color:#PRIACCENT#}.wp-core-ui .wp-ui-primary{color:#fff;" . 
-      "background-color:#MAINDARK#}.wp-core-ui .wp-ui-text-primary{color:#MAINDARK#}.wp-core-ui .wp-ui-highlight{color:#fff;background-color:#PRIACCENT#}.wp-" . 
-      "core-ui .wp-ui-text-highlight{color:#PRIACCENT#}.wp-core-ui .wp-ui-notification{color:#fff;background-color:#4d4d4d}.wp-core-ui .wp-ui-text-notificati" . 
-      "on{color:#4d4d4d}.wp-core-ui .wp-ui-text-icon{color:#f3f1f1}.wrap .page-title-action,.wrap .page-title-action:active{border:1px solid #MAINDARK#;color" . 
-      ":#MAINDARK#}.wrap .page-title-action:hover{color:#MAINDARK#}.wrap .page-title-action:focus{border-color:#PRIACCENT#;color:#MAINDARK#;-webkit-box-shado" . 
-      "w:0 0 0 1px #PRIACCENT#;box-shadow:0 0 0 1px #PRIACCENT#}.view-switch a.current:before{color:#MAINDARK#}.view-switch a:hover:before{color:#4d4d4d}#adm" . 
-      "inmenu,#adminmenuback,#adminmenuwrap{background:#MAINDARK#}#adminmenu a{color:#fff}#adminmenu div.wp-menu-image:before{color:#f3f1f1}#adminmenu a:hove" . 
-      "r,#adminmenu li.menu-top:hover,#adminmenu li.opensub>a.menu-top,#adminmenu li>a.menu-top:focus{color:#MAINDARK#;background-color:#PRIACCENT#}#adminmen" . 
-      "u li.menu-top:hover div.wp-menu-image:before,#adminmenu li.opensub>a.menu-top div.wp-menu-image:before{color:#MAINDARK#}.about-wrap .nav-tab-active,.n" . 
-      "av-tab-active,.nav-tab-active:hover{background-color:#f1f1f1;border-bottom-color:#f1f1f1}#adminmenu .wp-has-current-submenu .wp-submenu,#adminmenu .wp" . 
-      "-has-current-submenu.opensub .wp-submenu,#adminmenu .wp-submenu,#adminmenu a.wp-has-current-submenu:focus+.wp-submenu,.folded #adminmenu .wp-has-curre" . 
-      "nt-submenu .wp-submenu{background:#SECACCENT#}#adminmenu li.wp-has-submenu.wp-not-current-submenu.opensub:hover:after{border-right-color:#SECACCENT#}#" . 
-      "adminmenu .wp-submenu .wp-submenu-head{color:#f7f7f7}#adminmenu .wp-has-current-submenu .wp-submenu a,#adminmenu .wp-has-current-submenu.opensub .wp-s" . 
-      "ubmenu a,#adminmenu .wp-submenu a,#adminmenu a.wp-has-current-submenu:focus+.wp-submenu a,.folded #adminmenu .wp-has-current-submenu .wp-submenu a{col" . 
-      "or:#MAINDARK#}#adminmenu .wp-has-current-submenu .wp-submenu a:focus,#adminmenu .wp-has-current-submenu .wp-submenu a:hover,#adminmenu .wp-has-current" . 
-      "-submenu.opensub .wp-submenu a:focus,#adminmenu .wp-has-current-submenu.opensub .wp-submenu a:hover,#adminmenu .wp-submenu a:focus,#adminmenu .wp-subm" . 
-      "enu a:hover,#adminmenu a.wp-has-current-submenu:focus+.wp-submenu a:focus,#adminmenu a.wp-has-current-submenu:focus+.wp-submenu a:hover,.folded #admin" . 
-      "menu .wp-has-current-submenu .wp-submenu a:focus,.folded #adminmenu .wp-has-current-submenu .wp-submenu a:hover{color:#MAINDARK#;background-color:#PRI" . 
-      "ACCENT#}#adminmenu .wp-has-current-submenu.opensub .wp-submenu li.current a,#adminmenu .wp-submenu li.current a,#adminmenu a.wp-has-current-submenu:fo" . 
-      "cus+.wp-submenu li.current a{color:#MAINDARK#}#adminmenu .wp-has-current-submenu.opensub .wp-submenu li.current a:focus,#adminmenu .wp-has-current-sub" . 
-      "menu.opensub .wp-submenu li.current a:hover,#adminmenu .wp-submenu li.current a:focus,#adminmenu .wp-submenu li.current a:hover,#adminmenu a.wp-has-cu" . 
-      "rrent-submenu:focus+.wp-submenu li.current a:focus,#adminmenu a.wp-has-current-submenu:focus+.wp-submenu li.current a:hover{color:#MAINDARK#}ul#adminm" . 
-      "enu a.wp-has-current-submenu:after,ul#adminmenu>li.current>a.current:after{border-right-color:#f1f1f1}#adminmenu li.current a.menu-top,#adminmenu li.w" . 
-      "p-has-current-submenu .wp-submenu .wp-submenu-head,#adminmenu li.wp-has-current-submenu a.wp-has-current-submenu,.folded #adminmenu li.current.menu-to" . 
-      "p{color:#MAINDARK#;background:#PRIACCENT#}#adminmenu a.current:hover div.wp-menu-image:before,#adminmenu li a:focus div.wp-menu-image:before,#adminmen" . 
-      "u li.opensub div.wp-menu-image:before,#adminmenu li.wp-has-current-submenu a:focus div.wp-menu-image:before,#adminmenu li.wp-has-current-submenu div.w" . 
-      "p-menu-image:before,#adminmenu li.wp-has-current-submenu.opensub div.wp-menu-image:before,#adminmenu li:hover div.wp-menu-image:before{color:#MAINDARK" . 
-      "#}#adminmenu .awaiting-mod,#adminmenu .update-plugins{color:#fff;background:#f55a5a}#adminmenu li a.wp-has-current-submenu .update-plugins,#adminmenu " . 
-      "li.current a .awaiting-mod,#adminmenu li.menu-top:hover>a .update-plugins,#adminmenu li:hover a .awaiting-mod{color:#fff;background:#f55a5a}#collapse-" . 
-      "button{color:#f3f1f1}#collapse-button:focus,#collapse-button:hover{color:#f7f7f7}#wpadminbar{color:#fff;background:#MAINDARK#}#wpadminbar .ab-item,#wp" . 
-      "adminbar a.ab-item,#wpadminbar>#wp-toolbar span.ab-label,#wpadminbar>#wp-toolbar span.noticon{color:#fff}#wpadminbar .ab-icon,#wpadminbar .ab-icon:bef" . 
-      "ore,#wpadminbar .ab-item:after,#wpadminbar .ab-item:before{color:#f3f1f1}#wpadminbar .ab-top-menu>li.menupop.hover>.ab-item,#wpadminbar.nojq .quicklin" . 
-      "ks .ab-top-menu>li>.ab-item:focus,#wpadminbar.nojs .ab-top-menu>li.menupop:hover>.ab-item,#wpadminbar:not(.mobile) .ab-top-menu>li:hover>.ab-item,#wpa" . 
-      "dminbar:not(.mobile) .ab-top-menu>li>.ab-item:focus{color:#f7f7f7;background:#23262a}#wpadminbar:not(.mobile)>#wp-toolbar a:focus span.ab-label,#wpadm" . 
-      "inbar:not(.mobile)>#wp-toolbar li.hover span.ab-label,#wpadminbar:not(.mobile)>#wp-toolbar li:hover span.ab-label{color:#f7f7f7}#wpadminbar:not(.mobil" . 
-      "e) li:hover #adminbarsearch:before,#wpadminbar:not(.mobile) li:hover .ab-icon:before,#wpadminbar:not(.mobile) li:hover .ab-item:after,#wpadminbar:not(" . 
-      ".mobile) li:hover .ab-item:before{color:#fff}#wpadminbar .menupop .ab-sub-wrapper{background:#23262a}#wpadminbar .quicklinks .menupop ul.ab-sub-second" . 
-      "ary,#wpadminbar .quicklinks .menupop ul.ab-sub-secondary .ab-submenu{background:#cf6b67}#wpadminbar .ab-submenu .ab-item,#wpadminbar .quicklinks .menu" . 
-      "pop ul li a,#wpadminbar .quicklinks .menupop.hover ul li a,#wpadminbar.nojs .quicklinks .menupop:hover ul li a{color:#f7f7f7}#wpadminbar .menupop .men" . 
-      "upop>.ab-item:before,#wpadminbar .quicklinks li .blavatar{color:#f3f1f1}#wpadminbar .quicklinks .ab-sub-wrapper .menupop.hover>a,#wpadminbar .quicklin" . 
-      "ks .menupop ul li a:focus,#wpadminbar .quicklinks .menupop ul li a:focus strong,#wpadminbar .quicklinks .menupop ul li a:hover,#wpadminbar .quicklinks" . 
-      " .menupop ul li a:hover strong,#wpadminbar .quicklinks .menupop.hover ul li a:focus,#wpadminbar .quicklinks .menupop.hover ul li a:hover,#wpadminbar l" . 
-      "i #adminbarsearch.adminbar-focused:before,#wpadminbar li .ab-item:focus .ab-icon:before,#wpadminbar li .ab-item:focus:before,#wpadminbar li a:focus .a" . 
-      "b-icon:before,#wpadminbar li.hover .ab-icon:before,#wpadminbar li.hover .ab-item:before,#wpadminbar li:hover #adminbarsearch:before,#wpadminbar li:hov" . 
-      "er .ab-icon:before,#wpadminbar li:hover .ab-item:before,#wpadminbar.nojs .quicklinks .menupop:hover ul li a:focus,#wpadminbar.nojs .quicklinks .menupo" . 
-      "p:hover ul li a:hover{color:#f7f7f7}#wpadminbar .menupop .menupop>.ab-item:hover:before,#wpadminbar .quicklinks .ab-sub-wrapper .menupop.hover>a .blav" . 
-      "atar,#wpadminbar .quicklinks li a:focus .blavatar,#wpadminbar .quicklinks li a:hover .blavatar,#wpadminbar.mobile .quicklinks .ab-icon:before,#wpadmin" . 
-      "bar.mobile .quicklinks .ab-item:before{color:#f7f7f7}#wpadminbar.mobile .quicklinks .hover .ab-icon:before,#wpadminbar.mobile .quicklinks .hover .ab-i" . 
-      "tem:before{color:#f3f1f1}#wpadminbar #adminbarsearch:before{color:#f3f1f1}#wpadminbar>#wp-toolbar>#wp-admin-bar-top-secondary>#wp-admin-bar-search #ad" . 
-      "minbarsearch input.adminbar-input:focus{color:#fff;background:#d66560}#wpadminbar #wp-admin-bar-recovery-mode{color:#fff;background-color:#4d4d4d}#wpa" . 
-      "dminbar #wp-admin-bar-recovery-mode .ab-item,#wpadminbar #wp-admin-bar-recovery-mode a.ab-item{color:#fff}#wpadminbar .ab-top-menu>#wp-admin-bar-recov" . 
-      "ery-mode.hover>.ab-item,#wpadminbar.nojq .quicklinks .ab-top-menu>#wp-admin-bar-recovery-mode>.ab-item:focus,#wpadminbar:not(.mobile) .ab-top-menu>#wp" . 
-      "-admin-bar-recovery-mode:hover>.ab-item,#wpadminbar:not(.mobile) .ab-top-menu>#wp-admin-bar-recovery-mode>.ab-item:focus{color:#fff;background-color:#" . 
-      "PRIACCENT#}#wpadminbar .quicklinks li#wp-admin-bar-my-account.with-avatar>a img{border-color:#d66560;background-color:#d66560}#wpadminbar #wp-admin-ba" . 
-      "r-user-info .display-name{color:#fff}#wpadminbar #wp-admin-bar-user-info a:hover .display-name{color:#f7f7f7}#wpadminbar #wp-admin-bar-user-info .user" . 
-      "name{color:#f7f7f7}.wp-pointer .wp-pointer-content h3{background-color:#PRIACCENT#;border-color:#PRIACCENT#}.wp-pointer .wp-pointer-content h3:before{" . 
-      "color:#PRIACCENT#}.wp-pointer.wp-pointer-top .wp-pointer-arrow,.wp-pointer.wp-pointer-top .wp-pointer-arrow-inner,.wp-pointer.wp-pointer-undefined .wp" . 
-      "-pointer-arrow,.wp-pointer.wp-pointer-undefined .wp-pointer-arrow-inner{border-bottom-color:#PRIACCENT#}.media-item .bar,.media-progress-bar div{backg" . 
-      "round-color:#PRIACCENT#}.details.attachment{-webkit-box-shadow:inset 0 0 0 3px #fff,inset 0 0 0 7px #PRIACCENT#;box-shadow:inset 0 0 0 3px #fff,inset " . 
-      "0 0 0 7px #PRIACCENT#}.attachment.details .check{background-color:#PRIACCENT#;-webkit-box-shadow:0 0 0 1px #fff,0 0 0 2px #PRIACCENT#;box-shadow:0 0 0" . 
-      " 1px #fff,0 0 0 2px #PRIACCENT#}.media-selection .attachment.selection.details .thumbnail{-webkit-box-shadow:0 0 0 1px #fff,0 0 0 3px #PRIACCENT#;box-" . 
-      "shadow:0 0 0 1px #fff,0 0 0 3px #PRIACCENT#}.theme-browser .theme.active .theme-name,.theme-browser .theme.add-new-theme a:focus:after,.theme-browser " . 
-      ".theme.add-new-theme a:hover:after{background:#PRIACCENT#}.theme-browser .theme.add-new-theme a:focus span:after,.theme-browser .theme.add-new-theme a" . 
-      ":hover span:after{color:#PRIACCENT#}.theme-filter.current,.theme-section.current{border-bottom-color:#MAINDARK#}body.more-filters-opened .more-filters" . 
-      "{color:#fff;background-color:#MAINDARK#}body.more-filters-opened .more-filters:before{color:#fff}body.more-filters-opened .more-filters:focus,body.mor" . 
-      "e-filters-opened .more-filters:hover{background-color:#PRIACCENT#;color:#fff}body.more-filters-opened .more-filters:focus:before,body.more-filters-ope" . 
-      "ned .more-filters:hover:before{color:#fff}.widgets-chooser li.widgets-chooser-selected{background-color:#PRIACCENT#;color:#fff}.widgets-chooser li.wid" . 
-      "gets-chooser-selected:before,.widgets-chooser li.widgets-chooser-selected:focus:before{color:#fff}div#wp-responsive-toggle a:before{color:#f3f1f1}.wp-" . 
-      "responsive-open div#wp-responsive-toggle a{border-color:transparent;background:#PRIACCENT#}.wp-responsive-open #wpadminbar #wp-admin-bar-menu-toggle a" . 
-      "{background:#23262a}.wp-responsive-open #wpadminbar #wp-admin-bar-menu-toggle .ab-icon:before{color:#f3f1f1}.mce-container.mce-menu .mce-menu-item-nor" . 
-      "mal.mce-active,.mce-container.mce-menu .mce-menu-item-preview.mce-active,.mce-container.mce-menu .mce-menu-item.mce-selected,.mce-container.mce-menu ." . 
-      "mce-menu-item:focus,.mce-container.mce-menu .mce-menu-item:hover{background:#PRIACCENT#}#customize-controls .control-section .accordion-section-title:" . 
-      "focus,#customize-controls .control-section .accordion-section-title:hover,#customize-controls .control-section.open .accordion-section-title,#customiz" . 
-      "e-controls .control-section:hover>.accordion-section-title{color:#PRIACCENT#;border-left-color:#PRIACCENT#}.customize-controls-close:focus,.customize-" . 
-      "controls-close:hover,.customize-controls-preview-toggle:focus,.customize-controls-preview-toggle:hover{color:#PRIACCENT#;border-top-color:#PRIACCENT#}" . 
-      ".customize-panel-back:focus,.customize-panel-back:hover,.customize-section-back:focus,.customize-section-back:hover{color:#PRIACCENT#;border-left-colo" . 
-      "r:#PRIACCENT#}#customize-controls .customize-info.open.active-menu-screen-options .customize-help-toggle:active,#customize-controls .customize-info.op" . 
-      "en.active-menu-screen-options .customize-help-toggle:focus,#customize-controls .customize-info.open.active-menu-screen-options .customize-help-toggle:" . 
-      "hover,.active-menu-screen-options .customize-screen-options-toggle,.customize-screen-options-toggle:active,.customize-screen-options-toggle:focus,.cus" . 
-      "tomize-screen-options-toggle:hover{color:#PRIACCENT#}#available-menu-items .item-add:focus:before,#customize-controls .customize-info .customize-help-" . 
-      "toggle:focus:before,.customize-screen-options-toggle:focus:before,.menu-delete:focus,.menu-item-bar .item-delete:focus:before,.wp-customizer .menu-ite" . 
-      "m .submitbox .submitdelete:focus,.wp-customizer button:focus .toggle-indicator:before{-webkit-box-shadow:0 0 0 1px #e59e66,0 0 2px 1px #PRIACCENT#;box" . 
-      "-shadow:0 0 0 1px #e59e66,0 0 2px 1px #PRIACCENT#}#customize-controls .customize-info .customize-help-toggle:focus,#customize-controls .customize-info" . 
-      " .customize-help-toggle:hover,#customize-controls .customize-info.open .customize-help-toggle{color:#PRIACCENT#}.control-panel-themes .customize-theme" . 
-      "s-section-title:focus,.control-panel-themes .customize-themes-section-title:hover{border-left-color:#PRIACCENT#;color:#PRIACCENT#}.control-panel-theme" . 
-      "s .theme-section .customize-themes-section-title.selected:after{background:#PRIACCENT#}.control-panel-themes .customize-themes-section-title.selected{" . 
-      "color:#PRIACCENT#}#customize-outer-theme-controls .control-section .accordion-section-title:focus:after,#customize-outer-theme-controls .control-secti" . 
-      "on .accordion-section-title:hover:after,#customize-outer-theme-controls .control-section.open .accordion-section-title:after,#customize-outer-theme-co" . 
-      "ntrols .control-section:hover>.accordion-section-title:after,#customize-theme-controls .control-section .accordion-section-title:focus:after,#customiz" . 
-      "e-theme-controls .control-section .accordion-section-title:hover:after,#customize-theme-controls .control-section.open .accordion-section-title:after," . 
-      "#customize-theme-controls .control-section:hover>.accordion-section-title:after{color:#PRIACCENT#}.customize-control .attachment-media-view .button-ad" . 
-      "d-media:focus{background-color:#fbfbfc;border-color:#PRIACCENT#;border-style:solid;-webkit-box-shadow:0 0 0 1px #PRIACCENT#;box-shadow:0 0 0 1px #PRIA" . 
-      "CCENT#;outline:2px solid transparent}.wp-full-overlay-footer .devices button.active:hover,.wp-full-overlay-footer .devices button:focus{border-bottom-" . 
-      "color:#PRIACCENT#}.wp-core-ui .wp-full-overlay .collapse-sidebar:focus,.wp-core-ui .wp-full-overlay .collapse-sidebar:hover{color:#PRIACCENT#}.wp-full" . 
-      "-overlay .collapse-sidebar:focus .collapse-sidebar-arrow,.wp-full-overlay .collapse-sidebar:hover .collapse-sidebar-arrow{-webkit-box-shadow:0 0 0 1px" . 
+      $keyAdminCssStyles = "body{background:#f1f1f1}a{color:#MAINDARK#}a:active,a:focus,a:hover{color:#PRIACCENT#}#post-body #visibility:before,#post-body .misc-pub-post-status:b" .
+      "efore,#post-body .misc-pub-revisions:before,.curtime #timestamp:before,span.wp-media-buttons-icon:before{color:currentColor}.wp-core-ui .button-link{c" .
+      "olor:#0073aa}.wp-core-ui .button-link:active,.wp-core-ui .button-link:focus,.wp-core-ui .button-link:hover{color:#0096dd}.media-modal .delete-attachme" .
+      "nt,.media-modal .trash-attachment,.media-modal .untrash-attachment,.wp-core-ui .button-link-delete{color:#a00}.media-modal .delete-attachment:focus,.m" .
+      "edia-modal .delete-attachment:hover,.media-modal .trash-attachment:focus,.media-modal .trash-attachment:hover,.media-modal .untrash-attachment:focus,." .
+      "media-modal .untrash-attachment:hover,.wp-core-ui .button-link-delete:focus,.wp-core-ui .button-link-delete:hover{color:#dc3232}input[type=checkbox]:c" .
+      "hecked::before{content:url(data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2020%2020%27%3E%3C" .
+      "path%20d%3D%27M14.83%204.89l1.34.94-5.81%208.38H9.02L5.78%209.67l1.34-1.25%202.57%202.4z%27%20fill%3D%27%237e8993%27%2F%3E%3C%2Fsvg%3E)}input[type=rad" .
+      "io]:checked::before{background:#7e8993}.wp-core-ui input[type=reset]:active,.wp-core-ui input[type=reset]:hover{color:#0096dd}input[type=checkbox]:foc" .
+      "us,input[type=color]:focus,input[type=date]:focus,input[type=datetime-local]:focus,input[type=datetime]:focus,input[type=email]:focus,input[type=month" .
+      "]:focus,input[type=number]:focus,input[type=password]:focus,input[type=radio]:focus,input[type=search]:focus,input[type=tel]:focus,input[type=text]:fo" .
+      "cus,input[type=time]:focus,input[type=url]:focus,input[type=week]:focus,select:focus,textarea:focus{border-color:#PRIACCENT#;-webkit-box-shadow:0 0 0 " .
+      "1px #PRIACCENT#;box-shadow:0 0 0 1px #PRIACCENT#}.wp-core-ui .button{border-color:#7e8993;color:#32373c}.wp-core-ui .button.focus,.wp-core-ui .button." .
+      "hover,.wp-core-ui .button:focus,.wp-core-ui .button:hover{border-color:#717c87;color:#262a2e}.wp-core-ui .button.focus,.wp-core-ui .button:focus{borde" .
+      "r-color:#7e8993;color:#262a2e;-webkit-box-shadow:0 0 0 1px #32373c;box-shadow:0 0 0 1px #32373c}.wp-core-ui .button:active{border-color:#7e8993;color:" .
+      "#262a2e;-webkit-box-shadow:none;box-shadow:none}.wp-core-ui .button.active,.wp-core-ui .button.active:focus,.wp-core-ui .button.active:hover{border-co" .
+      "lor:#PRIACCENT#;color:#262a2e;-webkit-box-shadow:inset 0 2px 5px -3px #PRIACCENT#;box-shadow:inset 0 2px 5px -3px #PRIACCENT#}.wp-core-ui .button.acti" .
+      "ve:focus{-webkit-box-shadow:0 0 0 1px #32373c;box-shadow:0 0 0 1px #32373c}.wp-core-ui .button,.wp-core-ui .button-secondary{color:#MAINDARK#;border-c" .
+      "olor:#MAINDARK#}.wp-core-ui .button-secondary:hover,.wp-core-ui .button.hover,.wp-core-ui .button:hover{background:#f0f0f0;color:#MAINDARK#}.wp-core-u" .
+      "i .button-secondary:focus,.wp-core-ui .button.focus,.wp-core-ui .button:focus{border-color:#MAINDARK#;color:#MAINDARK#;-webkit-box-shadow:0 0 0 1px #M" .
+      "AINDARK#;box-shadow:0 0 0 1px #MAINDARK#}.wp-core-ui .button-primary:hover{color:#fff}.wp-core-ui .button-primary{background:#PRIACCENT#;border-color:" .
+      "#PRIACCENT#;color:#fff}.wp-core-ui .button-primary:focus,.wp-core-ui .button-primary:hover{background:#PRIACCENT#;border-color:#PRIACCENT#;color:#fff}" .
+      ".wp-core-ui .button-primary:focus{-webkit-box-shadow:0 0 0 1px #fff,0 0 0 3px #PRIACCENT#;box-shadow:0 0 0 1px #fff,0 0 0 3px #PRIACCENT#}.wp-core-ui " .
+      ".button-primary:active{background:#PRIACCENT#;border-color:#PRIACCENT#;color:#fff}.wp-core-ui .button-primary.active,.wp-core-ui .button-primary.activ" .
+      "e:focus,.wp-core-ui .button-primary.active:hover{background:#PRIACCENT#;color:#fff;border-color:#PRIACCENT#;-webkit-box-shadow:inset 0 2px 5px -3px #1" .
+      "50b04;box-shadow:inset 0 2px 5px -3px #150b04}.wp-core-ui .button-group>.button.active{border-color:#PRIACCENT#}.wp-core-ui .wp-ui-primary{color:#fff;" .
+      "background-color:#MAINDARK#}.wp-core-ui .wp-ui-text-primary{color:#MAINDARK#}.wp-core-ui .wp-ui-highlight{color:#fff;background-color:#PRIACCENT#}.wp-" .
+      "core-ui .wp-ui-text-highlight{color:#PRIACCENT#}.wp-core-ui .wp-ui-notification{color:#fff;background-color:#4d4d4d}.wp-core-ui .wp-ui-text-notificati" .
+      "on{color:#4d4d4d}.wp-core-ui .wp-ui-text-icon{color:#f3f1f1}.wrap .page-title-action,.wrap .page-title-action:active{border:1px solid #MAINDARK#;color" .
+      ":#MAINDARK#}.wrap .page-title-action:hover{color:#MAINDARK#}.wrap .page-title-action:focus{border-color:#PRIACCENT#;color:#MAINDARK#;-webkit-box-shado" .
+      "w:0 0 0 1px #PRIACCENT#;box-shadow:0 0 0 1px #PRIACCENT#}.view-switch a.current:before{color:#MAINDARK#}.view-switch a:hover:before{color:#4d4d4d}#adm" .
+      "inmenu,#adminmenuback,#adminmenuwrap{background:#MAINDARK#}#adminmenu a{color:#fff}#adminmenu div.wp-menu-image:before{color:#f3f1f1}#adminmenu a:hove" .
+      "r,#adminmenu li.menu-top:hover,#adminmenu li.opensub>a.menu-top,#adminmenu li>a.menu-top:focus{color:#MAINDARK#;background-color:#PRIACCENT#}#adminmen" .
+      "u li.menu-top:hover div.wp-menu-image:before,#adminmenu li.opensub>a.menu-top div.wp-menu-image:before{color:#MAINDARK#}.about-wrap .nav-tab-active,.n" .
+      "av-tab-active,.nav-tab-active:hover{background-color:#f1f1f1;border-bottom-color:#f1f1f1}#adminmenu .wp-has-current-submenu .wp-submenu,#adminmenu .wp" .
+      "-has-current-submenu.opensub .wp-submenu,#adminmenu .wp-submenu,#adminmenu a.wp-has-current-submenu:focus+.wp-submenu,.folded #adminmenu .wp-has-curre" .
+      "nt-submenu .wp-submenu{background:#SECACCENT#}#adminmenu li.wp-has-submenu.wp-not-current-submenu.opensub:hover:after{border-right-color:#SECACCENT#}#" .
+      "adminmenu .wp-submenu .wp-submenu-head{color:#f7f7f7}#adminmenu .wp-has-current-submenu .wp-submenu a,#adminmenu .wp-has-current-submenu.opensub .wp-s" .
+      "ubmenu a,#adminmenu .wp-submenu a,#adminmenu a.wp-has-current-submenu:focus+.wp-submenu a,.folded #adminmenu .wp-has-current-submenu .wp-submenu a{col" .
+      "or:#MAINDARK#}#adminmenu .wp-has-current-submenu .wp-submenu a:focus,#adminmenu .wp-has-current-submenu .wp-submenu a:hover,#adminmenu .wp-has-current" .
+      "-submenu.opensub .wp-submenu a:focus,#adminmenu .wp-has-current-submenu.opensub .wp-submenu a:hover,#adminmenu .wp-submenu a:focus,#adminmenu .wp-subm" .
+      "enu a:hover,#adminmenu a.wp-has-current-submenu:focus+.wp-submenu a:focus,#adminmenu a.wp-has-current-submenu:focus+.wp-submenu a:hover,.folded #admin" .
+      "menu .wp-has-current-submenu .wp-submenu a:focus,.folded #adminmenu .wp-has-current-submenu .wp-submenu a:hover{color:#MAINDARK#;background-color:#PRI" .
+      "ACCENT#}#adminmenu .wp-has-current-submenu.opensub .wp-submenu li.current a,#adminmenu .wp-submenu li.current a,#adminmenu a.wp-has-current-submenu:fo" .
+      "cus+.wp-submenu li.current a{color:#MAINDARK#}#adminmenu .wp-has-current-submenu.opensub .wp-submenu li.current a:focus,#adminmenu .wp-has-current-sub" .
+      "menu.opensub .wp-submenu li.current a:hover,#adminmenu .wp-submenu li.current a:focus,#adminmenu .wp-submenu li.current a:hover,#adminmenu a.wp-has-cu" .
+      "rrent-submenu:focus+.wp-submenu li.current a:focus,#adminmenu a.wp-has-current-submenu:focus+.wp-submenu li.current a:hover{color:#MAINDARK#}ul#adminm" .
+      "enu a.wp-has-current-submenu:after,ul#adminmenu>li.current>a.current:after{border-right-color:#f1f1f1}#adminmenu li.current a.menu-top,#adminmenu li.w" .
+      "p-has-current-submenu .wp-submenu .wp-submenu-head,#adminmenu li.wp-has-current-submenu a.wp-has-current-submenu,.folded #adminmenu li.current.menu-to" .
+      "p{color:#MAINDARK#;background:#PRIACCENT#}#adminmenu a.current:hover div.wp-menu-image:before,#adminmenu .current div.wp-menu-image:before, #adminmenu li a:focus div.wp-menu-image:before,#adminmen" .
+      "u li.opensub div.wp-menu-image:before,#adminmenu li.wp-has-current-submenu a:focus div.wp-menu-image:before,#adminmenu li.wp-has-current-submenu div.w" .
+      "p-menu-image:before,#adminmenu li.wp-has-current-submenu.opensub div.wp-menu-image:before,#adminmenu li:hover div.wp-menu-image:before{color:#MAINDARK" .
+      "#}#adminmenu .awaiting-mod,#adminmenu .update-plugins{color:#fff;background:#f55a5a}#adminmenu li a.wp-has-current-submenu .update-plugins,#adminmenu " .
+      "li.current a .awaiting-mod,#adminmenu li.menu-top:hover>a .update-plugins,#adminmenu li:hover a .awaiting-mod{color:#fff;background:#f55a5a}#collapse-" .
+      "button{color:#f3f1f1}#collapse-button:focus,#collapse-button:hover{color:#f7f7f7}#wpadminbar{color:#fff;background:#MAINDARK#}#wpadminbar .ab-item,#wp" .
+      "adminbar a.ab-item,#wpadminbar>#wp-toolbar span.ab-label,#wpadminbar>#wp-toolbar span.noticon{color:#fff}#wpadminbar .ab-icon,#wpadminbar .ab-icon:bef" .
+      "ore,#wpadminbar .ab-item:after,#wpadminbar .ab-item:before{color:#f3f1f1}#wpadminbar .ab-top-menu>li.menupop.hover>.ab-item,#wpadminbar.nojq .quicklin" .
+      "ks .ab-top-menu>li>.ab-item:focus,#wpadminbar.nojs .ab-top-menu>li.menupop:hover>.ab-item,#wpadminbar:not(.mobile) .ab-top-menu>li:hover>.ab-item,#wpa" .
+      "dminbar:not(.mobile) .ab-top-menu>li>.ab-item:focus{color:#f7f7f7;background:#23262a}#wpadminbar:not(.mobile)>#wp-toolbar a:focus span.ab-label,#wpadm" .
+      "inbar:not(.mobile)>#wp-toolbar li.hover span.ab-label,#wpadminbar:not(.mobile)>#wp-toolbar li:hover span.ab-label{color:#f7f7f7}#wpadminbar:not(.mobil" .
+      "e) li:hover #adminbarsearch:before,#wpadminbar:not(.mobile) li:hover .ab-icon:before,#wpadminbar:not(.mobile) li:hover .ab-item:after,#wpadminbar:not(" .
+      ".mobile) li:hover .ab-item:before{color:#fff}#wpadminbar .menupop .ab-sub-wrapper{background:#23262a}#wpadminbar .quicklinks .menupop ul.ab-sub-second" .
+      "ary,#wpadminbar .quicklinks .menupop ul.ab-sub-secondary .ab-submenu{background:#cf6b67}#wpadminbar .ab-submenu .ab-item,#wpadminbar .quicklinks .menu" .
+      "pop ul li a,#wpadminbar .quicklinks .menupop.hover ul li a,#wpadminbar.nojs .quicklinks .menupop:hover ul li a{color:#f7f7f7}#wpadminbar .menupop .men" .
+      "upop>.ab-item:before,#wpadminbar .quicklinks li .blavatar{color:#f3f1f1}#wpadminbar .quicklinks .ab-sub-wrapper .menupop.hover>a,#wpadminbar .quicklin" .
+      "ks .menupop ul li a:focus,#wpadminbar .quicklinks .menupop ul li a:focus strong,#wpadminbar .quicklinks .menupop ul li a:hover,#wpadminbar .quicklinks" .
+      " .menupop ul li a:hover strong,#wpadminbar .quicklinks .menupop.hover ul li a:focus,#wpadminbar .quicklinks .menupop.hover ul li a:hover,#wpadminbar l" .
+      "i #adminbarsearch.adminbar-focused:before,#wpadminbar li .ab-item:focus .ab-icon:before,#wpadminbar li .ab-item:focus:before,#wpadminbar li a:focus .a" .
+      "b-icon:before,#wpadminbar li.hover .ab-icon:before,#wpadminbar li.hover .ab-item:before,#wpadminbar li:hover #adminbarsearch:before,#wpadminbar li:hov" .
+      "er .ab-icon:before,#wpadminbar li:hover .ab-item:before,#wpadminbar.nojs .quicklinks .menupop:hover ul li a:focus,#wpadminbar.nojs .quicklinks .menupo" .
+      "p:hover ul li a:hover{color:#f7f7f7}#wpadminbar .menupop .menupop>.ab-item:hover:before,#wpadminbar .quicklinks .ab-sub-wrapper .menupop.hover>a .blav" .
+      "atar,#wpadminbar .quicklinks li a:focus .blavatar,#wpadminbar .quicklinks li a:hover .blavatar,#wpadminbar.mobile .quicklinks .ab-icon:before,#wpadmin" .
+      "bar.mobile .quicklinks .ab-item:before{color:#f7f7f7}#wpadminbar.mobile .quicklinks .hover .ab-icon:before,#wpadminbar.mobile .quicklinks .hover .ab-i" .
+      "tem:before{color:#f3f1f1}#wpadminbar #adminbarsearch:before{color:#f3f1f1}#wpadminbar>#wp-toolbar>#wp-admin-bar-top-secondary>#wp-admin-bar-search #ad" .
+      "minbarsearch input.adminbar-input:focus{color:#fff;background:#d66560}#wpadminbar #wp-admin-bar-recovery-mode{color:#fff;background-color:#4d4d4d}#wpa" .
+      "dminbar #wp-admin-bar-recovery-mode .ab-item,#wpadminbar #wp-admin-bar-recovery-mode a.ab-item{color:#fff}#wpadminbar .ab-top-menu>#wp-admin-bar-recov" .
+      "ery-mode.hover>.ab-item,#wpadminbar.nojq .quicklinks .ab-top-menu>#wp-admin-bar-recovery-mode>.ab-item:focus,#wpadminbar:not(.mobile) .ab-top-menu>#wp" .
+      "-admin-bar-recovery-mode:hover>.ab-item,#wpadminbar:not(.mobile) .ab-top-menu>#wp-admin-bar-recovery-mode>.ab-item:focus{color:#fff;background-color:#" .
+      "PRIACCENT#}#wpadminbar .quicklinks li#wp-admin-bar-my-account.with-avatar>a img{border-color:#d66560;background-color:#d66560}#wpadminbar #wp-admin-ba" .
+      "r-user-info .display-name{color:#fff}#wpadminbar #wp-admin-bar-user-info a:hover .display-name{color:#f7f7f7}#wpadminbar #wp-admin-bar-user-info .user" .
+      "name{color:#f7f7f7}.wp-pointer .wp-pointer-content h3{background-color:#PRIACCENT#;border-color:#PRIACCENT#}.wp-pointer .wp-pointer-content h3:before{" .
+      "color:#PRIACCENT#}.wp-pointer.wp-pointer-top .wp-pointer-arrow,.wp-pointer.wp-pointer-top .wp-pointer-arrow-inner,.wp-pointer.wp-pointer-undefined .wp" .
+      "-pointer-arrow,.wp-pointer.wp-pointer-undefined .wp-pointer-arrow-inner{border-bottom-color:#PRIACCENT#}.media-item .bar,.media-progress-bar div{backg" .
+      "round-color:#PRIACCENT#}.details.attachment{-webkit-box-shadow:inset 0 0 0 3px #fff,inset 0 0 0 7px #PRIACCENT#;box-shadow:inset 0 0 0 3px #fff,inset " .
+      "0 0 0 7px #PRIACCENT#}.attachment.details .check{background-color:#PRIACCENT#;-webkit-box-shadow:0 0 0 1px #fff,0 0 0 2px #PRIACCENT#;box-shadow:0 0 0" .
+      " 1px #fff,0 0 0 2px #PRIACCENT#}.media-selection .attachment.selection.details .thumbnail{-webkit-box-shadow:0 0 0 1px #fff,0 0 0 3px #PRIACCENT#;box-" .
+      "shadow:0 0 0 1px #fff,0 0 0 3px #PRIACCENT#}.theme-browser .theme.active .theme-name,.theme-browser .theme.add-new-theme a:focus:after,.theme-browser " .
+      ".theme.add-new-theme a:hover:after{background:#PRIACCENT#}.theme-browser .theme.add-new-theme a:focus span:after,.theme-browser .theme.add-new-theme a" .
+      ":hover span:after{color:#PRIACCENT#}.theme-filter.current,.theme-section.current{border-bottom-color:#MAINDARK#}body.more-filters-opened .more-filters" .
+      "{color:#fff;background-color:#MAINDARK#}body.more-filters-opened .more-filters:before{color:#fff}body.more-filters-opened .more-filters:focus,body.mor" .
+      "e-filters-opened .more-filters:hover{background-color:#PRIACCENT#;color:#fff}body.more-filters-opened .more-filters:focus:before,body.more-filters-ope" .
+      "ned .more-filters:hover:before{color:#fff}.widgets-chooser li.widgets-chooser-selected{background-color:#PRIACCENT#;color:#fff}.widgets-chooser li.wid" .
+      "gets-chooser-selected:before,.widgets-chooser li.widgets-chooser-selected:focus:before{color:#fff}div#wp-responsive-toggle a:before{color:#f3f1f1}.wp-" .
+      "responsive-open div#wp-responsive-toggle a{border-color:transparent;background:#PRIACCENT#}.wp-responsive-open #wpadminbar #wp-admin-bar-menu-toggle a" .
+      "{background:#23262a}.wp-responsive-open #wpadminbar #wp-admin-bar-menu-toggle .ab-icon:before{color:#f3f1f1}.mce-container.mce-menu .mce-menu-item-nor" .
+      "mal.mce-active,.mce-container.mce-menu .mce-menu-item-preview.mce-active,.mce-container.mce-menu .mce-menu-item.mce-selected,.mce-container.mce-menu ." .
+      "mce-menu-item:focus,.mce-container.mce-menu .mce-menu-item:hover{background:#PRIACCENT#}#customize-controls .control-section .accordion-section-title:" .
+      "focus,#customize-controls .control-section .accordion-section-title:hover,#customize-controls .control-section.open .accordion-section-title,#customiz" .
+      "e-controls .control-section:hover>.accordion-section-title{color:#PRIACCENT#;border-left-color:#PRIACCENT#}.customize-controls-close:focus,.customize-" .
+      "controls-close:hover,.customize-controls-preview-toggle:focus,.customize-controls-preview-toggle:hover{color:#PRIACCENT#;border-top-color:#PRIACCENT#}" .
+      ".customize-panel-back:focus,.customize-panel-back:hover,.customize-section-back:focus,.customize-section-back:hover{color:#PRIACCENT#;border-left-colo" .
+      "r:#PRIACCENT#}#customize-controls .customize-info.open.active-menu-screen-options .customize-help-toggle:active,#customize-controls .customize-info.op" .
+      "en.active-menu-screen-options .customize-help-toggle:focus,#customize-controls .customize-info.open.active-menu-screen-options .customize-help-toggle:" .
+      "hover,.active-menu-screen-options .customize-screen-options-toggle,.customize-screen-options-toggle:active,.customize-screen-options-toggle:focus,.cus" .
+      "tomize-screen-options-toggle:hover{color:#PRIACCENT#}#available-menu-items .item-add:focus:before,#customize-controls .customize-info .customize-help-" .
+      "toggle:focus:before,.customize-screen-options-toggle:focus:before,.menu-delete:focus,.menu-item-bar .item-delete:focus:before,.wp-customizer .menu-ite" .
+      "m .submitbox .submitdelete:focus,.wp-customizer button:focus .toggle-indicator:before{-webkit-box-shadow:0 0 0 1px #e59e66,0 0 2px 1px #PRIACCENT#;box" .
+      "-shadow:0 0 0 1px #e59e66,0 0 2px 1px #PRIACCENT#}#customize-controls .customize-info .customize-help-toggle:focus,#customize-controls .customize-info" .
+      " .customize-help-toggle:hover,#customize-controls .customize-info.open .customize-help-toggle{color:#PRIACCENT#}.control-panel-themes .customize-theme" .
+      "s-section-title:focus,.control-panel-themes .customize-themes-section-title:hover{border-left-color:#PRIACCENT#;color:#PRIACCENT#}.control-panel-theme" .
+      "s .theme-section .customize-themes-section-title.selected:after{background:#PRIACCENT#}.control-panel-themes .customize-themes-section-title.selected{" .
+      "color:#PRIACCENT#}#customize-outer-theme-controls .control-section .accordion-section-title:focus:after,#customize-outer-theme-controls .control-secti" .
+      "on .accordion-section-title:hover:after,#customize-outer-theme-controls .control-section.open .accordion-section-title:after,#customize-outer-theme-co" .
+      "ntrols .control-section:hover>.accordion-section-title:after,#customize-theme-controls .control-section .accordion-section-title:focus:after,#customiz" .
+      "e-theme-controls .control-section .accordion-section-title:hover:after,#customize-theme-controls .control-section.open .accordion-section-title:after," .
+      "#customize-theme-controls .control-section:hover>.accordion-section-title:after{color:#PRIACCENT#}.customize-control .attachment-media-view .button-ad" .
+      "d-media:focus{background-color:#fbfbfc;border-color:#PRIACCENT#;border-style:solid;-webkit-box-shadow:0 0 0 1px #PRIACCENT#;box-shadow:0 0 0 1px #PRIA" .
+      "CCENT#;outline:2px solid transparent}.wp-full-overlay-footer .devices button.active:hover,.wp-full-overlay-footer .devices button:focus{border-bottom-" .
+      "color:#PRIACCENT#}.wp-core-ui .wp-full-overlay .collapse-sidebar:focus,.wp-core-ui .wp-full-overlay .collapse-sidebar:hover{color:#PRIACCENT#}.wp-full" .
+      "-overlay .collapse-sidebar:focus .collapse-sidebar-arrow,.wp-full-overlay .collapse-sidebar:hover .collapse-sidebar-arrow{-webkit-box-shadow:0 0 0 1px" .
       " #e59e66,0 0 2px 1px #PRIACCENT#;box-shadow:0 0 0 1px #e59e66,0 0 2px 1px #PRIACCENT#}.wp-full-overlay-footer .devices button:focus:before,.wp-full-ov" .
       "erlay-footer .devices button:hover:before{color:#PRIACCENT#}";
       return $keyAdminCssStyles;
