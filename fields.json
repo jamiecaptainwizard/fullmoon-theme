@@ -1,159 +1,456 @@
 [
-  {
-      "key": "group_endingComingSoon",
-      "title": "Ending \/ Coming Soon",
-      "fields": [
-          {
-              "key": "field_widgets_coming_soon",
-              "label": "Coming soon message",
-              "name": "widgets_coming_soon",
-              "type": "textarea",
-              "instructions": "",
-              "required": 0,
-              "conditional_logic": 0,
-              "wrapper": {
-                  "width": "",
-                  "class": "",
-                  "id": ""
-              },
-              "default_value": "",
-              "placeholder": "",
-              "maxlength": "",
-              "rows": "",
-              "new_lines": "br"
-          },
-          {
-              "key": "field_widget_comingsoon_font",
-              "label": "Font size",
-              "name": "widget_comingsoon_font",
-              "type": "number",
-              "instructions": "",
-              "required": 0,
-              "conditional_logic": 0,
-              "wrapper": {
-                  "width": "",
-                  "class": "",
-                  "id": ""
-              },
-              "default_value": 100,
-              "placeholder": "",
-              "prepend": "",
-              "append": "px",
-              "min": 0,
-              "max": 1000,
-              "step": ""
-          }
-      ],
-      "location": [
-          [
-              {
-                  "param": "options_page",
-                  "operator": "==",
-                  "value": "fullmoon-video-widgets"
-              }
-          ]
-      ],
-      "menu_order": 10,
-      "position": "normal",
-      "style": "default",
-      "label_placement": "top",
-      "instruction_placement": "label",
-      "hide_on_screen": "",
-      "active": true,
-      "description": ""
-  },
-  {
-      "key": "group_subscribeAndLike",
-      "title": "Subscribe and Like",
-      "fields": [
-          {
-              "key": "field_widgets_subscribe",
-              "label": "Subscribe and Like Image",
-              "name": "widgets_subscribe",
-              "type": "image",
-              "instructions": "Normally 500px wide",
-              "required": 0,
-              "conditional_logic": 0,
-              "wrapper": {
-                  "width": "",
-                  "class": "",
-                  "id": ""
-              },
-              "return_format": "id",
-              "preview_size": "medium",
-              "library": "all",
-              "min_width": "",
-              "min_height": "",
-              "min_size": "",
-              "max_width": "",
-              "max_height": "",
-              "max_size": "",
-              "mime_types": ""
-          }
-      ],
-      "location": [
-          [
-              {
-                  "param": "options_page",
-                  "operator": "==",
-                  "value": "fullmoon-video-widgets"
-              }
-          ]
-      ],
-      "menu_order": 20,
-      "position": "normal",
-      "style": "default",
-      "label_placement": "top",
-      "instruction_placement": "label",
-      "hide_on_screen": "",
-      "active": true,
-      "description": ""
-  },
-  {
-      "key": "group_spoilers",
-      "title": "Spoilers",
-      "fields": [
-          {
-              "key": "field_widgets_spoilers",
-              "label": "Spoilers",
-              "name": "widgets_spoilers",
-              "type": "image",
-              "instructions": "Normally 1920px wide",
-              "required": 0,
-              "conditional_logic": 0,
-              "wrapper": {
-                  "width": "",
-                  "class": "",
-                  "id": ""
-              },
-              "return_format": "id",
-              "preview_size": "medium",
-              "library": "all",
-              "min_width": "",
-              "min_height": "",
-              "min_size": "",
-              "max_width": "",
-              "max_height": "",
-              "max_size": "",
-              "mime_types": ""
-          }
-      ],
-      "location": [
-          [
-              {
-                  "param": "options_page",
-                  "operator": "==",
-                  "value": "fullmoon-video-widgets"
-              }
-          ]
-      ],
-      "menu_order": 30,
-      "position": "normal",
-      "style": "default",
-      "label_placement": "top",
-      "instruction_placement": "label",
-      "hide_on_screen": "",
-      "active": true,
-      "description": ""
-  }
+    {
+        "key": "group_mainrecording",
+        "title": "Main Recording",
+        "fields": [
+            {
+                "key": "field_widgets_top_text",
+                "label": "Top message",
+                "name": "widgets_top_text",
+                "type": "text",
+                "instructions": "",
+                "required": 0,
+                "conditional_logic": 0,
+                "wrapper": {
+                    "width": "",
+                    "class": "",
+                    "id": ""
+                },
+                "default_value": "",
+                "placeholder": "",
+                "prepend": "",
+                "append": "",
+                "maxlength": ""
+            },
+            {
+                "key": "field_widget_top_text_font",
+                "label": "Top font size",
+                "name": "widget_top_text_font",
+                "type": "number",
+                "instructions": "",
+                "required": 0,
+                "conditional_logic": 0,
+                "wrapper": {
+                    "width": "",
+                    "class": "",
+                    "id": ""
+                },
+                "default_value": 45,
+                "placeholder": "",
+                "prepend": "",
+                "append": "px",
+                "min": 0,
+                "max": 1000,
+                "step": ""
+            },
+            {
+                "key": "field_widget_who",
+                "label": "Who is playing?",
+                "name": "widget_who",
+                "type": "select",
+                "instructions": "",
+                "required": 0,
+                "conditional_logic": 0,
+                "wrapper": {
+                    "width": "",
+                    "class": "",
+                    "id": ""
+                },
+                "choices": {
+                    "fullmoon": "All \/ Fullmoon",
+                    "demon": "Demon#",
+                    "catking": "Cat King",
+                    "redgem": "Last Red Gem"
+                },
+                "default_value": false,
+                "allow_null": 0,
+                "multiple": 0,
+                "ui": 0,
+                "return_format": "value",
+                "ajax": 0,
+                "placeholder": ""
+            },
+            {
+                "key": "field_widget_side",
+                "label": "Side message",
+                "name": "widget_side",
+                "type": "select",
+                "instructions": "",
+                "required": 0,
+                "conditional_logic": 0,
+                "wrapper": {
+                    "width": "",
+                    "class": "",
+                    "id": ""
+                },
+                "choices": {
+                    "letsplay": "Let's Play With",
+                    "walkthrough": "Walkthrough With",
+                    "survival": "Survival Mode With",
+                    "custom": "Custom message"
+                },
+                "default_value": false,
+                "allow_null": 0,
+                "multiple": 0,
+                "ui": 0,
+                "return_format": "value",
+                "ajax": 0,
+                "placeholder": ""
+            },
+            {
+                "key": "field_widget_side_custom",
+                "label": "Custom Side Message",
+                "name": "widget_side_custom",
+                "type": "text",
+                "instructions": "",
+                "required": 0,
+                "conditional_logic": [
+                    [
+                        {
+                            "field": "field_widget_side",
+                            "operator": "==",
+                            "value": "custom"
+                        }
+                    ]
+                ],
+                "wrapper": {
+                    "width": "",
+                    "class": "",
+                    "id": ""
+                },
+                "default_value": "",
+                "placeholder": "",
+                "prepend": "",
+                "append": "",
+                "maxlength": ""
+            },
+            {
+                "key": "field_widget_side_custom_font",
+                "label": "Custom Message Font size",
+                "name": "widget_side_custom_font",
+                "type": "number",
+                "instructions": "",
+                "required": 0,
+                "conditional_logic": [
+                    [
+                        {
+                            "field": "field_widget_side",
+                            "operator": "==",
+                            "value": "custom"
+                        }
+                    ]
+                ],
+                "wrapper": {
+                    "width": "",
+                    "class": "",
+                    "id": ""
+                },
+                "default_value": 80,
+                "placeholder": "",
+                "prepend": "",
+                "append": "px",
+                "min": 0,
+                "max": 1000,
+                "step": ""
+            }
+        ],
+        "location": [
+            [
+                {
+                    "param": "options_page",
+                    "operator": "==",
+                    "value": "fullmoon-video-widgets"
+                }
+            ]
+        ],
+        "menu_order": 5,
+        "position": "normal",
+        "style": "default",
+        "label_placement": "top",
+        "instruction_placement": "label",
+        "hide_on_screen": "",
+        "active": true,
+        "description": "",
+        "show_in_rest": 0
+    },
+    {
+        "key": "group_endingcomingsoon",
+        "title": "Ending \/ Coming Soon",
+        "fields": [
+            {
+                "key": "field_widgets_coming_soon",
+                "label": "Coming soon message",
+                "name": "widgets_coming_soon",
+                "type": "textarea",
+                "instructions": "",
+                "required": 0,
+                "conditional_logic": 0,
+                "wrapper": {
+                    "width": "",
+                    "class": "",
+                    "id": ""
+                },
+                "default_value": "",
+                "placeholder": "",
+                "maxlength": "",
+                "rows": "",
+                "new_lines": "br"
+            },
+            {
+                "key": "field_widget_comingsoon_font",
+                "label": "Font size",
+                "name": "widget_comingsoon_font",
+                "type": "number",
+                "instructions": "",
+                "required": 0,
+                "conditional_logic": 0,
+                "wrapper": {
+                    "width": "",
+                    "class": "",
+                    "id": ""
+                },
+                "default_value": 100,
+                "placeholder": "",
+                "prepend": "",
+                "append": "px",
+                "min": 0,
+                "max": 1000,
+                "step": ""
+            }
+        ],
+        "location": [
+            [
+                {
+                    "param": "options_page",
+                    "operator": "==",
+                    "value": "fullmoon-video-widgets"
+                }
+            ]
+        ],
+        "menu_order": 10,
+        "position": "normal",
+        "style": "default",
+        "label_placement": "top",
+        "instruction_placement": "label",
+        "hide_on_screen": "",
+        "active": true,
+        "description": "",
+        "show_in_rest": false
+    },
+    {
+        "key": "group_subscribeandlike",
+        "title": "Subscribe and Like",
+        "fields": [
+            {
+                "key": "field_widgets_subscribe",
+                "label": "Subscribe and Like Image",
+                "name": "widgets_subscribe",
+                "type": "image",
+                "instructions": "Normally 500px wide",
+                "required": 0,
+                "conditional_logic": 0,
+                "wrapper": {
+                    "width": "",
+                    "class": "",
+                    "id": ""
+                },
+                "return_format": "id",
+                "preview_size": "medium",
+                "library": "all",
+                "min_width": "",
+                "min_height": "",
+                "min_size": "",
+                "max_width": "",
+                "max_height": "",
+                "max_size": "",
+                "mime_types": ""
+            }
+        ],
+        "location": [
+            [
+                {
+                    "param": "options_page",
+                    "operator": "==",
+                    "value": "fullmoon-video-widgets"
+                }
+            ]
+        ],
+        "menu_order": 20,
+        "position": "normal",
+        "style": "default",
+        "label_placement": "top",
+        "instruction_placement": "label",
+        "hide_on_screen": "",
+        "active": true,
+        "description": "",
+        "show_in_rest": false
+    },
+    {
+        "key": "group_spoilers",
+        "title": "Spoilers",
+        "fields": [
+            {
+                "key": "field_widgets_spoilers",
+                "label": "Spoilers",
+                "name": "widgets_spoilers",
+                "type": "image",
+                "instructions": "Normally 1920px wide",
+                "required": 0,
+                "conditional_logic": 0,
+                "wrapper": {
+                    "width": "",
+                    "class": "",
+                    "id": ""
+                },
+                "return_format": "id",
+                "preview_size": "medium",
+                "library": "all",
+                "min_width": "",
+                "min_height": "",
+                "min_size": "",
+                "max_width": "",
+                "max_height": "",
+                "max_size": "",
+                "mime_types": ""
+            }
+        ],
+        "location": [
+            [
+                {
+                    "param": "options_page",
+                    "operator": "==",
+                    "value": "fullmoon-video-widgets"
+                }
+            ]
+        ],
+        "menu_order": 30,
+        "position": "normal",
+        "style": "default",
+        "label_placement": "top",
+        "instruction_placement": "label",
+        "hide_on_screen": "",
+        "active": true,
+        "description": "",
+        "show_in_rest": false
+    },
+    {
+        "key": "group_tagimages",
+        "title": "Tag Images",
+        "fields": [
+            {
+                "key": "field_widgets_tag_demon",
+                "label": "Tag: demon#",
+                "name": "widgets_tag_demon",
+                "type": "image",
+                "instructions": "",
+                "required": 0,
+                "conditional_logic": 0,
+                "wrapper": {
+                    "width": "",
+                    "class": "",
+                    "id": ""
+                },
+                "return_format": "id",
+                "preview_size": "medium",
+                "library": "all",
+                "min_width": "",
+                "min_height": "",
+                "min_size": "",
+                "max_width": "",
+                "max_height": "",
+                "max_size": "",
+                "mime_types": ""
+            },
+            {
+                "key": "field_widgets_tag_catking",
+                "label": "Tag: CatKing",
+                "name": "widgets_tag_catking",
+                "type": "image",
+                "instructions": "",
+                "required": 0,
+                "conditional_logic": 0,
+                "wrapper": {
+                    "width": "",
+                    "class": "",
+                    "id": ""
+                },
+                "return_format": "id",
+                "preview_size": "medium",
+                "library": "all",
+                "min_width": "",
+                "min_height": "",
+                "min_size": "",
+                "max_width": "",
+                "max_height": "",
+                "max_size": "",
+                "mime_types": ""
+            },
+            {
+                "key": "field_widgets_tag_redgem",
+                "label": "Tag: RedGem",
+                "name": "widgets_tag_redgem",
+                "type": "image",
+                "instructions": "",
+                "required": 0,
+                "conditional_logic": 0,
+                "wrapper": {
+                    "width": "",
+                    "class": "",
+                    "id": ""
+                },
+                "return_format": "id",
+                "preview_size": "medium",
+                "library": "all",
+                "min_width": "",
+                "min_height": "",
+                "min_size": "",
+                "max_width": "",
+                "max_height": "",
+                "max_size": "",
+                "mime_types": ""
+            },
+            {
+                "key": "field_widgets_tag_fullmoon",
+                "label": "Tag: FullMoon",
+                "name": "widgets_tag_fullmoon",
+                "type": "image",
+                "instructions": "",
+                "required": 0,
+                "conditional_logic": 0,
+                "wrapper": {
+                    "width": "",
+                    "class": "",
+                    "id": ""
+                },
+                "return_format": "id",
+                "preview_size": "medium",
+                "library": "all",
+                "min_width": "",
+                "min_height": "",
+                "min_size": "",
+                "max_width": "",
+                "max_height": "",
+                "max_size": "",
+                "mime_types": ""
+            }
+        ],
+        "location": [
+            [
+                {
+                    "param": "options_page",
+                    "operator": "==",
+                    "value": "fullmoon-video-widgets"
+                }
+            ]
+        ],
+        "menu_order": 40,
+        "position": "normal",
+        "style": "default",
+        "label_placement": "top",
+        "instruction_placement": "label",
+        "hide_on_screen": "",
+        "active": true,
+        "description": "",
+        "show_in_rest": 0
+    }
 ]

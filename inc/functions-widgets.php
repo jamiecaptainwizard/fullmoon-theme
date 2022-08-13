@@ -27,6 +27,9 @@ class fullmoon_widgets {
     static::createSoon();
     static::createSubscribe();
     static::createSpoilers();
+    static::createTop();
+    static::createPlayer();
+    static::createSide();
   }
 
   /*------------*/
@@ -86,6 +89,52 @@ class fullmoon_widgets {
 
     $htmlContent = sprintf('<h1 style="font-size:%dpx;">%s</h1>', $fontsize, $copy);
     static::saveWidget('soon', $htmlContent);
+  }
+
+  /*------------*/
+  public static function createTop() {
+    $message = fm_strOption('widgets_top_text');
+    $fontsize = fm_intOption('widget_top_text_font');
+
+    $htmlContent = sprintf('<div><h1 style="font-size:%dpx;">%s</h1></div>', $fontsize, $message);
+    static::saveWidget('top', $htmlContent);
+  }
+
+  /*------------*/
+  public static function createPlayer() {
+    $whoIsPlaying = fm_strOption('widget_who', 'fullmoon');
+    $imageField = 'widgets_tag_' . $whoIsPlaying;
+    $imageID = fm_intOption($imageField);
+    if ($imageID > 0) {
+      $image = imageAsBase64($imageID);
+    }
+
+    $htmlContent = '<div><img src="' . $image . '"></div>' . PHP_EOL;
+    static::saveWidget('player', $htmlContent);
+  }
+
+  /*------------*/
+  public static function createSide() {
+    $messageType = fm_strOption('field_widget_side', 'letsplay');
+    $fontSize = 80;
+    $message = "Let's Play With";
+    switch ($messageType) {
+      case 'walkthrough' : 
+        $message = 'Walkthroughs With'; 
+        $fontSize = 75;
+        break;
+      case 'survival' : 
+        $message = 'Survival Mode With'; 
+        $fontSize = 70;
+        break;
+      case 'custom' : 
+        $message =  fm_strOption('widget_side_custom'); 
+        $fontSize =  fm_intOption('widget_side_custom_font'); 
+        break;
+    }
+
+    $htmlContent = sprintf('<div><h1 style="font-size:%dpx;">%s</h1></div>', $fontSize, $message);
+    static::saveWidget('side', $htmlContent);
   }
 
   /*------------*/
